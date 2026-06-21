@@ -1,9 +1,9 @@
 package com.example.ecommerce_fashionformen.domain.entity;
 
-import com.example.ecommerce_fashionformen.domain.BaseEntity;
+import com.example.ecommerce_fashionformen.domain.AuditableEntity;
 import com.example.ecommerce_fashionformen.domain.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,8 +15,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class User extends BaseEntity {
+@EqualsAndHashCode(callSuper = false)
+public class User extends AuditableEntity {
 
     @Column(nullable = false, unique = true, length = 50)
     private String username;
@@ -27,15 +27,14 @@ public class User extends BaseEntity {
     @Column(length = 100)
     private String email;
 
-    @Column(length = 20, unique = true , nullable = false)
+    @Column(length = 20, unique = true, nullable = false)
     private String phone;
 
-    @Column(name = "full_name",nullable = false, length = 255)
+    @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rank_id")

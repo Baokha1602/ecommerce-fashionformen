@@ -18,6 +18,7 @@ public class UserAddress extends AuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @EqualsAndHashCode.Exclude
     private User user;
 
     @Column(name = "address", nullable = false, length = 255)

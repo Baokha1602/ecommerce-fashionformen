@@ -39,18 +39,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 User user = userRepository.findById(userId).orElse(null);
 
                 if (user != null && user.getIsActive()) {
+                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().name()));
+                    org.springframework.security.core.userdetails.User principal =
+                            new org.springframework.security.core.userdetails.User(
+                                    user.getUsername(),
+                                    "",
+                                    user.getIsActive(),
+                                    true,
+                                    true,
+                                    true,
+                                    authorities
+                            );
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    user,
+                                    principal,
                                     null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole().name()))
+                                    authorities
                             );
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception e) {
-                // Token không hợp lệ → không authenticate, để Spring Security trả 401
-                logger.debug("JWT validation failed: " + e.getMessage());
+                logger.error("JWT validation failed: " + e.getMessage(), e);
             }
         }
 

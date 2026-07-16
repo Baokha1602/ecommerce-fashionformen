@@ -1,5 +1,6 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
+import com.example.ecommerce_fashionformen.common.exception.BadRequestException;
 import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Rank;
 import com.example.ecommerce_fashionformen.dto.rank.RankResponse;
@@ -56,6 +57,31 @@ public class RankServiceImpl implements RankService {
         rank.setRankName(request.getRankName());
         rank.setPoint(request.getPoint());
         rank.setRankDiscount(request.getRankDiscount());
+
+        return mapToResponse(rankRepository.save(rank));
+    }
+
+    @Override
+    @Transactional
+    public RankResponse patch(Long id, RankUpsertRequest request) {
+        Rank rank = rankRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy hạng với ID: " + id));
+
+        if (request.getRankName() != null) {
+            rank.setRankName(request.getRankName());
+        }
+        if (request.getPoint() != null) {
+            if (request.getPoint() < 0) {
+                throw new BadRequestException("Điểm tích lũy tối thiểu không được âm");
+            }
+            rank.setPoint(request.getPoint());
+        }
+        if (request.getRankDiscount() != null) {
+            if (request.getRankDiscount() < 0 || request.getRankDiscount() > 100) {
+                throw new BadRequestException("Giảm giá hạng tối đa là 100% và không được âm");
+            }
+            rank.setRankDiscount(request.getRankDiscount());
+        }
 
         return mapToResponse(rankRepository.save(rank));
     }

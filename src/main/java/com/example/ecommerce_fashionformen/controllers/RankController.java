@@ -40,6 +40,11 @@ public class RankController {
         return ApiResponse.success("Cập nhật hạng thành công", rankService.update(id, request));
     }
 
+    @PatchMapping("/{id}")
+    public ApiResponse<RankResponse> patch(@PathVariable Long id, @RequestBody RankUpsertRequest request) {
+        return ApiResponse.success("Cập nhật hạng thành công", rankService.patch(id, request));
+    }
+
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         rankService.delete(id);

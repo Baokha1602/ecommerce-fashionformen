@@ -38,6 +38,7 @@ public class User extends AuditableEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rank_id")
+    @EqualsAndHashCode.Exclude
     private Rank rank;
 
     @Column(name = "date_of_birth")

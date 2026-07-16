@@ -15,5 +15,7 @@ public interface RankService {
 
     RankResponse update(Long id, RankUpsertRequest request);
 
+    RankResponse patch(Long id, RankUpsertRequest request);
+
     void delete(Long id);
 }

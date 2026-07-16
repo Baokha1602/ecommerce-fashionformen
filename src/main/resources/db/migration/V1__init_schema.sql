@@ -55,10 +55,8 @@ CREATE TABLE `promotions` (
 CREATE TABLE `categories` (
     `id`         BIGINT AUTO_INCREMENT PRIMARY KEY,
     `name`       VARCHAR(100) NOT NULL UNIQUE,
-    `parent_id`  BIGINT DEFAULT NULL,
     `created_at` DATETIME(6) NOT NULL,
-    `updated_at` DATETIME(6) NOT NULL,
-    FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
+    `updated_at` DATETIME(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Brand: khớp với Brand.java (extends AuditableEntity)

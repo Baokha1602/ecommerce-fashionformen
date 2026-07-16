@@ -24,11 +24,6 @@ public class CategoryController {
         return ApiResponse.success("Lấy danh sách danh mục thành công", categoryService.findAll());
     }
 
-    @GetMapping("/roots")
-    public ApiResponse<List<CategoryResponse>> getRoots() {
-        return ApiResponse.success("Lấy danh sách danh mục gốc thành công", categoryService.findRootCategories());
-    }
-
     @GetMapping("/{id}")
     public ApiResponse<CategoryResponse> getById(@PathVariable Long id) {
         return ApiResponse.success("Lấy danh mục thành công", categoryService.findById(id));

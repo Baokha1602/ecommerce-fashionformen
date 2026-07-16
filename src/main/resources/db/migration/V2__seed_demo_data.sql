@@ -23,31 +23,27 @@ INSERT INTO `brands` (`name`, `description`, `logo_url`, `is_active`, `created_a
 ('BILUXURY', 'Thuong hieu suit & vest cao cap danh rieng cho nam.',    'https://biluxury.vn/wp-content/uploads/2022/07/logo-biluxury.png',            b'1', NOW(6), NOW(6));
 
 -- -------------------------------------------------------------------------
--- 3. CATEGORIES (Category.java) - Phan cap cha/con
+-- 3. CATEGORIES (Category.java)
 -- -------------------------------------------------------------------------
--- Danh muc cha
-INSERT INTO `categories` (`name`, `parent_id`, `created_at`, `updated_at`) VALUES
-('Ao',         NULL, NOW(6), NOW(6)),
-('Quan',       NULL, NOW(6), NOW(6)),
-('Giay & Dep', NULL, NOW(6), NOW(6)),
-('Phu kien',   NULL, NOW(6), NOW(6));
-
--- Danh muc con (parent_id = id cua danh muc cha tuong ung)
-INSERT INTO `categories` (`name`, `parent_id`, `created_at`, `updated_at`) VALUES
-('Ao Thun',      1, NOW(6), NOW(6)),
-('Ao So Mi',     1, NOW(6), NOW(6)),
-('Ao Khoac',     1, NOW(6), NOW(6)),
-('Ao Hoodie',    1, NOW(6), NOW(6)),
-('Quan Jeans',   2, NOW(6), NOW(6)),
-('Quan Short',   2, NOW(6), NOW(6)),
-('Quan Tay',     2, NOW(6), NOW(6)),
-('Quan Jogger',  2, NOW(6), NOW(6)),
-('Giay Sneaker', 3, NOW(6), NOW(6)),
-('Giay Tay',     3, NOW(6), NOW(6)),
-('Dep Sandal',   3, NOW(6), NOW(6)),
-('That Lung',    4, NOW(6), NOW(6)),
-('Mu & Non',     4, NOW(6), NOW(6)),
-('Tui & Ba Lo',  4, NOW(6), NOW(6));
+INSERT INTO `categories` (`name`, `created_at`, `updated_at`) VALUES
+('Ao',         NOW(6), NOW(6)),
+('Quan',       NOW(6), NOW(6)),
+('Giay & Dep', NOW(6), NOW(6)),
+('Phu kien',   NOW(6), NOW(6)),
+('Ao Thun',    NOW(6), NOW(6)),
+('Ao So Mi',   NOW(6), NOW(6)),
+('Ao Khoac',   NOW(6), NOW(6)),
+('Ao Hoodie',  NOW(6), NOW(6)),
+('Quan Jeans', NOW(6), NOW(6)),
+('Quan Short', NOW(6), NOW(6)),
+('Quan Tay',   NOW(6), NOW(6)),
+('Quan Jogger', NOW(6), NOW(6)),
+('Giay Sneaker', NOW(6), NOW(6)),
+('Giay Tay',   NOW(6), NOW(6)),
+('Dep Sandal', NOW(6), NOW(6)),
+('That Lung',  NOW(6), NOW(6)),
+('Mu & Non',   NOW(6), NOW(6)),
+('Tui & Ba Lo', NOW(6), NOW(6));
 
 -- -------------------------------------------------------------------------
 -- 4. TAGS (Tag.java)

@@ -1,6 +1,5 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
-import com.example.ecommerce_fashionformen.common.exception.BadRequestException;
 import com.example.ecommerce_fashionformen.common.exception.ConflictException;
 import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Category;
@@ -23,26 +22,13 @@ public class CategoryServiceImpl implements CategoryService {
     private final ModelMapper mapper;
 
     private CategoryResponse mapToResponse(Category category) {
-        CategoryResponse res = mapper.map(category, CategoryResponse.class);
-        if (category.getParent() != null) {
-            res.setParentId(category.getParent().getId());
-            res.setParentName(category.getParent().getName());
-        }
-        return res;
+        return mapper.map(category, CategoryResponse.class);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CategoryResponse> findAll() {
         return categoryRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CategoryResponse> findRootCategories() {
-        return categoryRepository.findByParentIsNull().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -65,12 +51,6 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = new Category();
         category.setName(request.getName());
 
-        if (request.getParentId() != null) {
-            Category parent = categoryRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục cha với ID: " + request.getParentId()));
-            category.setParent(parent);
-        }
-
         return mapToResponse(categoryRepository.save(category));
     }
 
@@ -85,20 +65,7 @@ public class CategoryServiceImpl implements CategoryService {
             throw new ConflictException("Tên danh mục đã tồn tại: " + request.getName());
         }
 
-        // Không cho phép set parent là chính mình
-        if (request.getParentId() != null && request.getParentId().equals(id)) {
-            throw new BadRequestException("Danh mục không thể là cha của chính nó");
-        }
-
         category.setName(request.getName());
-
-        if (request.getParentId() != null) {
-            Category parent = categoryRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục cha với ID: " + request.getParentId()));
-            category.setParent(parent);
-        } else {
-            category.setParent(null);
-        }
 
         return mapToResponse(categoryRepository.save(category));
     }

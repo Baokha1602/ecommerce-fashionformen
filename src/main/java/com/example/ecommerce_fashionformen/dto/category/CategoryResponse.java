@@ -13,8 +13,6 @@ public class CategoryResponse {
 
     private Long id;
     private String name;
-    private Long parentId;
-    private String parentName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

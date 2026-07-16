@@ -9,8 +9,6 @@ public interface CategoryService {
 
     List<CategoryResponse> findAll();
 
-    List<CategoryResponse> findRootCategories();
-
     CategoryResponse findById(Long id);
 
     CategoryResponse create(CategoryUpsertRequest request);

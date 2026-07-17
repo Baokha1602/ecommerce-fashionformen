@@ -1,4 +1,4 @@
-package com.example.ecommerce_fashionformen.controller;
+package com.example.ecommerce_fashionformen.controllers;
 
 import com.example.ecommerce_fashionformen.dto.order.OrderCreateRequest;
 import com.example.ecommerce_fashionformen.dto.order.OrderResponse;

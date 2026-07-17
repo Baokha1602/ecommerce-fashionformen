@@ -1,4 +1,4 @@
-package com.example.ecommerce_fashionformen.controller;
+package com.example.ecommerce_fashionformen.controllers;
 
 import com.example.ecommerce_fashionformen.dto.promotion.PromotionCreateRequest;
 import com.example.ecommerce_fashionformen.dto.promotion.PromotionResponse;

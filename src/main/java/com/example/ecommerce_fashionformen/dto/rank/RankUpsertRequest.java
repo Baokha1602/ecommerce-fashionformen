@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,5 +25,5 @@ public class RankUpsertRequest {
     @NotNull(message = "Giảm giá hạng không được để trống")
     @Min(value = 0, message = "Giảm giá hạng không được âm")
     @Max(value = 100, message = "Giảm giá hạng tối đa là 100%")
-    private Double rankDiscount;
+    private BigDecimal rankDiscount;
 }

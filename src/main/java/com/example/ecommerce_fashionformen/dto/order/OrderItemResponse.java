@@ -1,6 +1,5 @@
-package com.example.ecommerce_fashionformen.dto.rank;
+package com.example.ecommerce_fashionformen.dto.order;
 
-import com.example.ecommerce_fashionformen.domain.enums.RankName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,11 +9,12 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class RankResponse {
+public class OrderItemResponse {
     private Long id;
-    private RankName rankName;
-    private int point;
-    private BigDecimal rankDiscount;
+    private Long orderId;
+    private Long productVariantId;
+    private BigDecimal price;
+    private Integer quantity;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -12,6 +12,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -77,7 +78,7 @@ public class RankServiceImpl implements RankService {
             rank.setPoint(request.getPoint());
         }
         if (request.getRankDiscount() != null) {
-            if (request.getRankDiscount() < 0 || request.getRankDiscount() > 100) {
+            if (request.getRankDiscount().compareTo(BigDecimal.ZERO) < 0 || request.getRankDiscount().compareTo(new BigDecimal("100")) > 0) {
                 throw new BadRequestException("Giảm giá hạng tối đa là 100% và không được âm");
             }
             rank.setRankDiscount(request.getRankDiscount());

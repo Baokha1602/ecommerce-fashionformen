@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,13 +20,13 @@ public class CouponUpdateRequest {
 
     @Min(value = 0, message = "Tỷ lệ giảm giá không được nhỏ hơn 0")
     @Max(value = 100, message = "Tỷ lệ giảm giá tối đa là 100%")
-    private Double discountRate;
+    private BigDecimal discountRate;
 
     @Min(value = 0, message = "Số tiền giảm tối đa không được nhỏ hơn 0")
-    private Double maxDiscountAmount;
+    private BigDecimal maxDiscountAmount;
 
     @Min(value = 0, message = "Giá trị đơn hàng tối thiểu không được nhỏ hơn 0")
-    private Double minOrderValue;
+    private BigDecimal minOrderValue;
 
     private LocalDateTime startDate;
 

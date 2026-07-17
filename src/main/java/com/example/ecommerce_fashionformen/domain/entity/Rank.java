@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+
 @Table(name = "ranks")
 @Getter
 @Setter
@@ -23,6 +25,6 @@ public class Rank extends AuditableEntity {
     @Column(name = "point", nullable = false)
     private int point = 0;
 
-    @Column(name = "rank_discount", nullable = false)
-    private double rankDiscount = 0.0;
+    @Column(name = "rank_discount", nullable = false, precision = 5, scale = 2)
+    private BigDecimal rankDiscount = BigDecimal.ZERO;
 }

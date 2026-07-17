@@ -1,9 +1,8 @@
-package com.example.ecommerce_fashionformen.dto.coupon;
+package com.example.ecommerce_fashionformen.dto.promotion;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,7 +10,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CouponResponse {
-
     private Long id;
     private String code;
     private String name;
@@ -22,6 +20,6 @@ public class CouponResponse {
     private LocalDateTime endDate;
     private Integer usageLimit;
     private Boolean isActive;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private boolean isValid;
+    private String message;
 }

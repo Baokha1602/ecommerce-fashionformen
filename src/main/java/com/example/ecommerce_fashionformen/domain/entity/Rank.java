@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Table(name = "ranks")
 @Getter
 @Setter
@@ -18,8 +20,8 @@ public class Rank extends AuditableEntity {
 
     private int point;
 
-    @Column(name = "rank_discount")
-    private int rankDiscount;
+    @Column(name = "rank_discount", precision = 5, scale = 2)
+    private BigDecimal rankDiscount;
 
 
 }

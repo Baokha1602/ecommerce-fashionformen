@@ -1,6 +1,6 @@
 package com.example.ecommerce_fashionformen.controllers;
 
-import com.example.ecommerce_fashionformen.common.ApiResponse;
+import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
 import com.example.ecommerce_fashionformen.dto.brand.BrandResponse;
 import com.example.ecommerce_fashionformen.dto.brand.BrandUpsertRequest;
 import com.example.ecommerce_fashionformen.services.BrandService;

@@ -1,4 +1,4 @@
-package com.example.ecommerce_fashionformen.common;
+package com.example.ecommerce_fashionformen.controllers.common;
 
 import java.time.LocalDateTime;
 

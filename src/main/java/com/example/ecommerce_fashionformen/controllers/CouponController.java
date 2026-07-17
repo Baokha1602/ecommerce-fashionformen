@@ -1,6 +1,6 @@
 package com.example.ecommerce_fashionformen.controllers;
 
-import com.example.ecommerce_fashionformen.common.ApiResponse;
+import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponCreateRequest;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponResponse;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponUpdateRequest;

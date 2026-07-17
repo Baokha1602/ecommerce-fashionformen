@@ -1,9 +1,7 @@
 package com.example.ecommerce_fashionformen.dto.user;
 
-import com.example.ecommerce_fashionformen.common.validation.MinAge;
+import com.example.ecommerce_fashionformen.controllers.common.validation.MinAge;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;

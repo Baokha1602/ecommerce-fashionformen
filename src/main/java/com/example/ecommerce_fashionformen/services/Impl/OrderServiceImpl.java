@@ -5,7 +5,7 @@ import com.example.ecommerce_fashionformen.domain.entity.OrderItem;
 import com.example.ecommerce_fashionformen.domain.entity.User;
 import com.example.ecommerce_fashionformen.dto.order.OrderCreateRequest;
 import com.example.ecommerce_fashionformen.dto.order.OrderResponse;
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.repository.OrderItemRepository;
 import com.example.ecommerce_fashionformen.repository.OrderRepository;
 import com.example.ecommerce_fashionformen.repository.UserRepository;

@@ -1,4 +1,4 @@
-package com.example.ecommerce_fashionformen.common.validation;
+package com.example.ecommerce_fashionformen.controllers.common.validation;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;

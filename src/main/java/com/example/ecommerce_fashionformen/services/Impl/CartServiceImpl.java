@@ -5,7 +5,7 @@ import com.example.ecommerce_fashionformen.domain.entity.CartItem;
 import com.example.ecommerce_fashionformen.domain.entity.User;
 import com.example.ecommerce_fashionformen.dto.cart.CartItemRequest;
 import com.example.ecommerce_fashionformen.dto.cart.CartResponse;
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.repository.CartItemRepository;
 import com.example.ecommerce_fashionformen.repository.CartRepository;
 import com.example.ecommerce_fashionformen.repository.UserRepository;

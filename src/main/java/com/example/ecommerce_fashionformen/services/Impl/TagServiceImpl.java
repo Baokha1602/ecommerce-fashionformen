@@ -1,7 +1,7 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
-import com.example.ecommerce_fashionformen.common.exception.ConflictException;
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.ConflictException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Tag;
 import com.example.ecommerce_fashionformen.dto.tag.TagCreateRequest;
 import com.example.ecommerce_fashionformen.dto.tag.TagResponse;

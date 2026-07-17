@@ -1,7 +1,7 @@
 package com.example.ecommerce_fashionformen.dto.user;
 
 
-import com.example.ecommerce_fashionformen.common.validation.MinAge;
+import com.example.ecommerce_fashionformen.controllers.common.validation.MinAge;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDate;

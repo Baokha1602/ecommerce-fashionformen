@@ -1,8 +1,8 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
-import com.example.ecommerce_fashionformen.common.exception.BadRequestException;
-import com.example.ecommerce_fashionformen.common.exception.ConflictException;
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.BadRequestException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.ConflictException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Coupon;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponCreateRequest;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponResponse;

@@ -1,6 +1,6 @@
 package com.example.ecommerce_fashionformen.controllers;
 
-import com.example.ecommerce_fashionformen.common.ApiResponse;
+import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
 import com.example.ecommerce_fashionformen.dto.rank.RankResponse;
 import com.example.ecommerce_fashionformen.dto.rank.RankUpsertRequest;
 import com.example.ecommerce_fashionformen.services.RankService;

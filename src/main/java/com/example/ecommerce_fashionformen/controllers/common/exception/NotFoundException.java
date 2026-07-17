@@ -1,4 +1,4 @@
-package com.example.ecommerce_fashionformen.common.exception;
+package com.example.ecommerce_fashionformen.controllers.common.exception;
 
 public class NotFoundException extends RuntimeException {
 

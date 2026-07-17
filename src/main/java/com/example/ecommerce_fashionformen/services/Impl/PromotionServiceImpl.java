@@ -4,7 +4,7 @@ import com.example.ecommerce_fashionformen.domain.entity.Promotion;
 import com.example.ecommerce_fashionformen.domain.entity.PromotionProduct;
 import com.example.ecommerce_fashionformen.dto.promotion.PromotionCreateRequest;
 import com.example.ecommerce_fashionformen.dto.promotion.PromotionResponse;
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.repository.PromotionProductRepository;
 import com.example.ecommerce_fashionformen.repository.PromotionRepository;
 import com.example.ecommerce_fashionformen.repository.CouponRepository;

@@ -1,6 +1,6 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Banner;
 import com.example.ecommerce_fashionformen.dto.banner.BannerResponse;
 import com.example.ecommerce_fashionformen.dto.banner.BannerUpsertRequest;

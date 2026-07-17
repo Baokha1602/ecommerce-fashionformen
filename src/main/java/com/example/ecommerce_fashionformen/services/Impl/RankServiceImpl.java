@@ -1,7 +1,7 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
-import com.example.ecommerce_fashionformen.common.exception.BadRequestException;
-import com.example.ecommerce_fashionformen.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.BadRequestException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Rank;
 import com.example.ecommerce_fashionformen.dto.rank.RankResponse;
 import com.example.ecommerce_fashionformen.dto.rank.RankUpsertRequest;

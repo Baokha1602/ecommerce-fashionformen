@@ -1,24 +1,28 @@
 package com.example.ecommerce_fashionformen.domain.entity;
 
-import com.example.ecommerce_fashionformen.domain.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
+import com.example.ecommerce_fashionformen.domain.AuditableEntity;
+import jakarta.persistence.*;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "product_variants")
-public class ProductVariant extends BaseEntity {
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = false)
+public class ProductVariant extends AuditableEntity {
 
-    @Column(name = "product_id", nullable = false)
-    private Long productId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    private Product product;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, length = 255)
     private String name;
 
     @Column(name = "price", nullable = false, precision = 19, scale = 4)
@@ -31,8 +35,9 @@ public class ProductVariant extends BaseEntity {
     private BigDecimal discountRate;
 
     @Column(name = "stock_total", nullable = false)
-    private Integer stockTotal;
+    private Integer stockTotal = 0;
 
     @Column(name = "stock_lock", nullable = false)
-    private Integer stockLock;
+    private Integer stockLock = 0;
 }
+

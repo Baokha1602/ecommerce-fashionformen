@@ -9,7 +9,7 @@ import com.example.ecommerce_fashionformen.controllers.common.exception.NotFound
 import com.example.ecommerce_fashionformen.repository.CartItemRepository;
 import com.example.ecommerce_fashionformen.repository.CartRepository;
 import com.example.ecommerce_fashionformen.repository.UserRepository;
-import com.example.ecommerce_fashionformen.repository.ProductVariantRepository;
+import com.example.ecommerce_fashionformen.repository.ProductVariantsRepository;
 import com.example.ecommerce_fashionformen.repository.CouponRepository;
 import com.example.ecommerce_fashionformen.domain.entity.ProductVariant;
 import com.example.ecommerce_fashionformen.domain.entity.Coupon;
@@ -33,7 +33,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final UserRepository userRepository;
-    private final ProductVariantRepository productVariantRepository;
+    private final ProductVariantsRepository productVariantRepository;
     private final CouponRepository couponRepository;
     private final ModelMapper mapper;
 

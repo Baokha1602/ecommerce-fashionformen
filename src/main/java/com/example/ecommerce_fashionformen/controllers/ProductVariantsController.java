@@ -1,9 +1,9 @@
 package com.example.ecommerce_fashionformen.controllers;
 
 import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
-import com.example.ecommerce_fashionformen.dto.request.ProductVariantsRequest;
-import com.example.ecommerce_fashionformen.dto.response.ProductVariantsResponse;
-import com.example.ecommerce_fashionformen.services.ProductVariantsService;
+import com.example.ecommerce_fashionformen.dto.request.ProductVariantRequest;
+import com.example.ecommerce_fashionformen.dto.response.ProductVariantResponse;
+import com.example.ecommerce_fashionformen.services.ProductVariantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,40 +13,36 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/product-variants")
+@RequestMapping("/api/v1/product-variants")
 @RequiredArgsConstructor
 public class ProductVariantsController {
 
-    private final ProductVariantsService productVariantsService;
+    private final ProductVariantService productVariantService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<ProductVariantsResponse>> createProductVariants(@Valid @RequestBody ProductVariantsRequest request) {
-        ProductVariantsResponse response = productVariantsService.createProductVariants(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("ProductVariants created successfully", response));
+    @GetMapping
+    public ApiResponse<List<ProductVariantResponse>> getAll() {
+        return ApiResponse.success("Lấy danh sách biến thể sản phẩm thành công", productVariantService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductVariantsResponse>> getProductVariantsById(@PathVariable Long id) {
-        ProductVariantsResponse response = productVariantsService.getProductVariantsById(id);
-        return ResponseEntity.ok(ApiResponse.success("ProductVariants retrieved successfully", response));
+    public ApiResponse<ProductVariantResponse> getById(@PathVariable Long id) {
+        return ApiResponse.success("Lấy biến thể sản phẩm thành công", productVariantService.findById(id));
     }
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductVariantsResponse>>> getAllProductVariantss() {
-        return ResponseEntity.ok(ApiResponse.success("ProductVariantss retrieved successfully", productVariantsService.getAllProductVariantss()));
+    @PostMapping
+    public ResponseEntity<ApiResponse<ProductVariantResponse>> create(@Valid @RequestBody ProductVariantRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Tạo biến thể sản phẩm thành công", productVariantService.create(request)));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductVariantsResponse>> updateProductVariants(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductVariantsRequest request) {
-        ProductVariantsResponse response = productVariantsService.updateProductVariants(id, request);
-        return ResponseEntity.ok(ApiResponse.success("ProductVariants updated successfully", response));
+    public ApiResponse<ProductVariantResponse> update(@PathVariable Long id, @Valid @RequestBody ProductVariantRequest request) {
+        return ApiResponse.success("Cập nhật biến thể sản phẩm thành công", productVariantService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteProductVariants(@PathVariable Long id) {
-        productVariantsService.deleteProductVariants(id);
-        return ResponseEntity.ok(ApiResponse.successMessage("ProductVariants deleted successfully"));
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        productVariantService.delete(id);
+        return ApiResponse.successMessage("Xóa biến thể sản phẩm thành công");
     }
 }

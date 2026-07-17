@@ -9,7 +9,7 @@ import com.example.ecommerce_fashionformen.controllers.common.exception.NotFound
 import com.example.ecommerce_fashionformen.repository.OrderItemRepository;
 import com.example.ecommerce_fashionformen.repository.OrderRepository;
 import com.example.ecommerce_fashionformen.repository.UserRepository;
-import com.example.ecommerce_fashionformen.repository.ProductVariantRepository;
+import com.example.ecommerce_fashionformen.repository.ProductVariantsRepository;
 import com.example.ecommerce_fashionformen.repository.CouponRepository;
 import com.example.ecommerce_fashionformen.domain.entity.ProductVariant;
 import com.example.ecommerce_fashionformen.domain.entity.Coupon;
@@ -35,7 +35,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
-    private final ProductVariantRepository productVariantRepository;
+    private final ProductVariantsRepository productVariantRepository;
     private final CouponRepository couponRepository;
     private final ModelMapper mapper;
 

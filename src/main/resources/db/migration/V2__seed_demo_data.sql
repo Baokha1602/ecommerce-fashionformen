@@ -87,15 +87,15 @@ INSERT INTO `coupons` (`code`, `name`, `discount_rate`, `max_discount_amount`, `
 -- -------------------------------------------------------------------------
 INSERT INTO `users` (`username`, `password_hash`, `email`, `phone`, `full_name`, `avatar_url`, `date_of_birth`, `user_role`, `rank_id`, `current_point`, `is_active`, `created_at`, `updated_at`) VALUES
 -- Admin (id=1)
-('admin',       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@fashionformen.vn',     '0900000001', 'Nguyen Quan Tri',  NULL,                               '1990-01-15', 'ADMIN',    4, 9999, b'1', NOW(6), NOW(6)),
+('admin',       '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'admin@fashionformen.vn',     '0900000001', 'Nguyen Quan Tri',  NULL,                               '1990-01-15', 'ADMIN',    4, 9999, b'1', NOW(6), NOW(6)),
 -- Staff (id=2)
-('staff_nam',   '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'nam.staff@fashionformen.vn', '0900000002', 'Tran Van Nam',     NULL,                               '1995-05-20', 'STAFF',    1, 0,    b'1', NOW(6), NOW(6)),
+('staff_nam',   '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'nam.staff@fashionformen.vn', '0900000002', 'Tran Van Nam',     NULL,                               '1995-05-20', 'STAFF',    1, 0,    b'1', NOW(6), NOW(6)),
 -- Customers
-('khachhang01', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'hieu.nguyen@gmail.com',     '0901234567', 'Nguyen Minh Hieu', 'https://i.pravatar.cc/150?img=11', '1998-08-10', 'CUSTOMER', 2, 750,  b'1', NOW(6), NOW(6)),
-('khachhang02', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'tuan.le@gmail.com',         '0912345678', 'Le Hoang Tuan',    'https://i.pravatar.cc/150?img=12', '1997-03-22', 'CUSTOMER', 3, 2150, b'1', NOW(6), NOW(6)),
-('khachhang03', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'phuc.tran@gmail.com',       '0923456789', 'Tran Quoc Phuc',   NULL,                               '2000-12-05', 'CUSTOMER', 1, 120,  b'1', NOW(6), NOW(6)),
-('khachhang04', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'an.pham@yahoo.com',         '0934567890', 'Pham Duc An',      'https://i.pravatar.cc/150?img=15', '1999-07-18', 'CUSTOMER', 1, 80,   b'1', NOW(6), NOW(6)),
-('khachhang05', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'long.vo@gmail.com',         '0945678901', 'Vo Thanh Long',    'https://i.pravatar.cc/150?img=16', '1996-02-28', 'CUSTOMER', 4, 6200, b'1', NOW(6), NOW(6));
+('khachhang01', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'hieu.nguyen@gmail.com',     '0901234567', 'Nguyen Minh Hieu', 'https://i.pravatar.cc/150?img=11', '1998-08-10', 'CUSTOMER', 2, 750,  b'1', NOW(6), NOW(6)),
+('khachhang02', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'tuan.le@gmail.com',         '0912345678', 'Le Hoang Tuan',    'https://i.pravatar.cc/150?img=12', '1997-03-22', 'CUSTOMER', 3, 2150, b'1', NOW(6), NOW(6)),
+('khachhang03', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'phuc.tran@gmail.com',       '0923456789', 'Tran Quoc Phuc',   NULL,                               '2000-12-05', 'CUSTOMER', 1, 120,  b'1', NOW(6), NOW(6)),
+('khachhang04', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'an.pham@yahoo.com',         '0934567890', 'Pham Duc An',      'https://i.pravatar.cc/150?img=15', '1999-07-18', 'CUSTOMER', 1, 80,   b'1', NOW(6), NOW(6)),
+('khachhang05', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'long.vo@gmail.com',         '0945678901', 'Vo Thanh Long',    'https://i.pravatar.cc/150?img=16', '1996-02-28', 'CUSTOMER', 4, 6200, b'1', NOW(6), NOW(6));
 
 
 -- -------------------------------------------------------------------------

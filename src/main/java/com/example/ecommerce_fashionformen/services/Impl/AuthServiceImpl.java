@@ -30,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
-    // ======================== ĐĂNG KÝ ========================
+
 
     @Override
     @Transactional
@@ -64,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user);
     }
 
-    // ======================== ĐĂNG NHẬP ========================
+
 
     @Override
     @Transactional
@@ -86,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user);
     }
 
-    // ======================== REFRESH TOKEN ========================
+
 
     @Override
     @Transactional
@@ -141,11 +141,7 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(accessToken, refreshTokenNew, mapToUserResponse(user));
     }
 
-    // ======================== HELPER METHODS ========================
 
-    /**
-     * Tạo access token, refresh token, lưu session và trả về AuthResponse
-     */
     private AuthResponse buildAuthResponse(User user) {
         String jti = jwtTokenProvider.generateJti();
         String accessToken = jwtTokenProvider.generateAccessToken(user);
@@ -156,9 +152,7 @@ public class AuthServiceImpl implements AuthService {
         return new AuthResponse(accessToken, refreshToken, mapToUserResponse(user));
     }
 
-    /**
-     * Lưu refresh token session vào DB
-     */
+
     private void saveRefreshTokenSession(User user, String jti) {
         RefreshTokenSession session = new RefreshTokenSession();
         session.setJti(jti);
@@ -167,9 +161,7 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenSessionRepository.save(session);
     }
 
-    /**
-     * Map User entity sang UserResponse DTO
-     */
+
     private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());

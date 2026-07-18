@@ -18,7 +18,7 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = false)
 public class User extends AuditableEntity {
 
-    @Column(name = "user_name",nullable = false, unique = true, length = 50) 
+    @Column(name = "username", nullable = false, unique = true, length = 50) 
     private String username;
 
     @Column(name = "password_hash", nullable = false, length = 255)

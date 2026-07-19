@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface OtpRepository extends JpaRepository<Otp, Long> {
     Optional<Otp> findTopByEmailAndPurposeOrderByCreatedAtDesc(String email, OtpPurpose purpose);
+    Optional<Otp> findByResetPasswordToken(String resetPasswordToken);
 }

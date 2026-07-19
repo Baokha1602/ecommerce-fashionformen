@@ -28,20 +28,20 @@ spring:
     clean-disabled: false
     clean-on-validation-error: true
 
-#  mail:
-#    host: smtp.gmail.com
-#    port: 587
-#    username: ${MAIL_USERNAME:demorandomotp@gmail.com}
-#    password: ${MAIL_PASSWORD:wfqz dahf nsla qlwp}
-#    properties:
-#      mail:
-#        smtp:
-#          auth: true
-#          starttls:
-#            enable: true
-#          connectiontimeout: 5000
-#          timeout: 5000
-#          writetimeout: 5000
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:demorandomotp@gmail.com}
+    password: ${MAIL_PASSWORD:wfqz dahf nsla qlwp}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 server:
   port: 8080

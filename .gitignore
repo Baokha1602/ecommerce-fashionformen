@@ -1,33 +1,92 @@
-HELP.md
+# =========================================================================
+# Maven / Build Tool Outputs
+# =========================================================================
 target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.restore
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# Avoid ignoring wrapper jar if needed, but standard practice is to keep wrapper
+# !.mvn/wrapper/maven-wrapper.jar
 
-### STS ###
+# =========================================================================
+# IDEs and Editors
+# =========================================================================
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+/classes/
+
+# Eclipse
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
-### VS Code ###
+# Visual Studio Code (VS Code)
 .vscode/
+
+# Sublime Text / Atom
+*.sublime-project
+*.sublime-workspace
+
+# =========================================================================
+# OS / System Files
+# =========================================================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# =========================================================================
+# Environment Variables & Secrets
+# =========================================================================
+.env
+.env.local
+.env.*.local
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+
+# =========================================================================
+# Logs and Temporary Files
+# =========================================================================
+*.log
+logs/
+temp/
+tmp/
+hs_err_pid*
+replay_pid*
+*.hprof

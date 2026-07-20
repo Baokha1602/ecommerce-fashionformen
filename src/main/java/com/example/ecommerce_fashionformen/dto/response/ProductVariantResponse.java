@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -21,6 +22,7 @@ public class ProductVariantResponse {
     private BigDecimal discountRate;
     private Integer stockTotal;
     private Integer stockLock;
+    private Map<String, String> attributes; // Tên thuộc tính -> Giá trị
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

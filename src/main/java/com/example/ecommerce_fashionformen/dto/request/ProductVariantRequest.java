@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -35,4 +36,6 @@ public class ProductVariantRequest {
 
     @Min(value = 0, message = "Tồn kho giữ không được âm")
     private Integer stockLock;
+
+    private List<Long> attributeValueIds;
 }

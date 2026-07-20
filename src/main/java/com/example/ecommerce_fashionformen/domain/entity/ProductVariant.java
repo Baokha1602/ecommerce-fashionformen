@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "product_variants")
@@ -39,5 +41,13 @@ public class ProductVariant extends AuditableEntity {
 
     @Column(name = "stock_lock", nullable = false)
     private Integer stockLock = 0;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "variant_attribute_values",
+            joinColumns = @JoinColumn(name = "variant_id"),
+            inverseJoinColumns = @JoinColumn(name = "attribute_value_id")
+    )
+    private Set<AttributeValue> attributeValues = new HashSet<>();
 }
 

@@ -39,5 +39,9 @@ public class ProductVariant extends AuditableEntity {
 
     @Column(name = "stock_lock", nullable = false)
     private Integer stockLock = 0;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
 }
 

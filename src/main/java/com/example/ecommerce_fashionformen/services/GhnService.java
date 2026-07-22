@@ -30,4 +30,19 @@ public interface GhnService {
      * @return Response từ GHN chứa order_code và thời gian dự kiến giao
      */
     GhnCreateOrderResponse createShippingOrder(Order order, UserAddress address, List<OrderItem> orderItems);
+
+    /**
+     * Lấy danh sách tỉnh/thành phố từ GHN API.
+     */
+    Object getProvinces();
+
+    /**
+     * Lấy danh sách quận/huyện từ GHN API theo tỉnh/thành phố.
+     */
+    Object getDistricts(int provinceId);
+
+    /**
+     * Lấy danh sách phường/xã từ GHN API theo quận/huyện.
+     */
+    Object getWards(int districtId);
 }

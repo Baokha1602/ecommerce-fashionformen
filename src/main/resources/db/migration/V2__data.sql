@@ -1,6 +1,3 @@
-
-
-
 -- -------------------------------------------------------------------------
 -- 1. RANKS (Rank.java)
 --    RankName enum: BRONZE, SILVER, GOLD, DIAMOND
@@ -97,24 +94,23 @@ INSERT INTO `users` (`username`, `password_hash`, `email`, `phone`, `full_name`,
 ('khachhang04', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'an.pham@yahoo.com',         '0934567890', 'Pham Duc An',      'https://i.pravatar.cc/150?img=15', '1999-07-18', 'CUSTOMER', 1, 80,   b'1', NOW(6), NOW(6)),
 ('khachhang05', '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'long.vo@gmail.com',         '0945678901', 'Vo Thanh Long',    'https://i.pravatar.cc/150?img=16', '1996-02-28', 'CUSTOMER', 4, 6200, b'1', NOW(6), NOW(6));
 
-
 -- -------------------------------------------------------------------------
 -- 8. USER_ADDRESS (UserAddress.java)
 --    AddressType enum: HOME, OFFICE, OTHER
 -- -------------------------------------------------------------------------
 INSERT INTO `user_address` (`user_id`, `address`, `address_type`, `province_id`, `province_name`, `district_id`, `district_name`, `ward_id`, `ward_name`, `is_default`, `created_at`, `updated_at`) VALUES
 -- khachhang01 (user_id=3)
-(3, '12 Nguyen Van Bao',   'HOME',   202, 'TP. Ho Chi Minh', 1454, 'Quan Go Vap',    'GV00001', 'Phuong 1',           b'1', NOW(6), NOW(6)),
-(3, 'Tang 5 Toa nha ABC',  'OFFICE', 202, 'TP. Ho Chi Minh', 1442, 'Quan Binh Thanh','BT00010', 'Phuong 10',          b'0', NOW(6), NOW(6)),
+(3, '12 Nguyen Van Bao',   'HOME',   202, 'TP. Ho Chi Minh', 1461, 'Quan Go Vap',    '21301',  'Phuong 1',           b'1', NOW(6), NOW(6)),
+(3, 'Tang 5 Toa nha ABC',  'OFFICE', 202, 'TP. Ho Chi Minh', 1462, 'Quan Binh Thanh','21608',  'Phuong 12',          b'0', NOW(6), NOW(6)),
 -- khachhang02 (user_id=4)
-(4, '58 Le Loi',            'HOME',   201, 'Ha Noi',          1490, 'Quan Dong Da',   'DD00005', 'Phuong Van Mieu',    b'1', NOW(6), NOW(6)),
+(4, '58 Le Loi',            'HOME',   201, 'Ha Noi',          1486, 'Quan Dong Da',   '1A0421', 'Phuong Van Mieu',    b'1', NOW(6), NOW(6)),
 -- khachhang03 (user_id=5)
-(5, '99 Tran Phu',          'HOME',   203, 'Da Nang',         1565, 'Quan Hai Chau',  'HC00002', 'Phuong Hai Chau 1', b'1', NOW(6), NOW(6)),
+(5, '99 Tran Phu',          'HOME',   203, 'Da Nang',         1526, 'Quan Hai Chau',  '40103',  'Phuong Hai Chau 1',  b'1', NOW(6), NOW(6)),
 -- khachhang04 (user_id=6)
-(6, '24 Hung Vuong',        'HOME',   202, 'TP. Ho Chi Minh', 1444, 'Quan 1',         'Q100001', 'Phuong Ben Nghe',   b'1', NOW(6), NOW(6)),
+(6, '24 Hung Vuong',        'HOME',   202, 'TP. Ho Chi Minh', 1442, 'Quan 1',         '20101',  'Phuong Ben Nghe',    b'1', NOW(6), NOW(6)),
 -- khachhang05 (user_id=7)
-(7, '7 Pasteur',            'HOME',   202, 'TP. Ho Chi Minh', 1444, 'Quan 1',         'Q100003', 'Phuong Ben Thanh',  b'1', NOW(6), NOW(6)),
-(7, '15 Ly Tu Trong',       'OFFICE', 202, 'TP. Ho Chi Minh', 1444, 'Quan 1',         'Q100004', 'Phuong Cau Ong Lang',b'0', NOW(6), NOW(6));
+(7, '7 Pasteur',            'HOME',   202, 'TP. Ho Chi Minh', 1442, 'Quan 1',         '20102',  'Phuong Ben Thanh',   b'1', NOW(6), NOW(6)),
+(7, '15 Ly Tu Trong',       'OFFICE', 202, 'TP. Ho Chi Minh', 1442, 'Quan 1',         '20104',  'Phuong Cau Ong Lang',b'0', NOW(6), NOW(6));
 
 -- -------------------------------------------------------------------------
 -- 9. OTPS (Otp.java)
@@ -143,3 +139,80 @@ INSERT INTO `refresh_token_sessions` (`jti`, `user_id`, `expires_at`, `revoked_a
 ('b2c3d4e5-0004-0004-0004-99aabbccddee', 4, '2026-07-23 05:00:00.000000', NULL,                          NULL,                                   NOW(6), NOW(6)),
 -- khachhang05 dang dang nhap (user_id=7)
 ('c3d4e5f6-0005-0005-0005-8899aabbccdd', 7, '2026-07-23 06:00:00.000000', NULL,                          NULL,                                   NOW(6), NOW(6));
+
+
+-- -------------------------------------------------------------------------
+-- 11. PRODUCTS (Product.java)
+-- -------------------------------------------------------------------------
+INSERT INTO `products` (`id`, `category_id`, `brand_id`, `name`, `description`, `sold_quantity`, `created_at`, `updated_at`) VALUES
+(1, 5,  5, 'Ao Thun Routine Essential', 'Ao thun basic chat lieu cotton organic thich hop mac hang ngay.', 15, NOW(6), NOW(6)),
+(2, 6,  5, 'Ao So Mi Nam Routine', 'Ao so mi co duc chat lieu soi tre it nhan ben dep.', 8, NOW(6), NOW(6)),
+(3, 7,  1, 'Ao Khoac Gio The Thao Nike', 'Ao khoac gio chong tham nuoc va chong gio phong cach the thao.', 5, NOW(6), NOW(6)),
+(4, 9,  3, 'Quan Jeans Slimfit Zara', 'Quan jeans chat lieu denim co gian thoai mai dang om vua van.', 20, NOW(6), NOW(6)),
+(5, 10, 4, 'Quan Short Denim H&M', 'Quan short denim thoi trang nang dong thich hop di choi.', 12, NOW(6), NOW(6)),
+(6, 13, 2, 'Giay Sneaker Adidas Ultraboost', 'Giay sneaker cao cap ho tro chay bo va su dung hang ngay.', 4, NOW(6), NOW(6)),
+(7, 6,  6, 'Ao Vest Nam Cao Cap BILUXURY', 'Ao vest nam may do ti mi, form dang tre trung, phong cach lich lam.', 2, NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 12. PRODUCT_VARIANTS (ProductVariant.java)
+-- -------------------------------------------------------------------------
+INSERT INTO `product_variants` (`id`, `product_id`, `name`, `price`, `discount_price`, `discount_rate`, `stock_total`, `stock_lock`, `created_at`, `updated_at`) VALUES
+(1,  1, 'S / Trang', 150000.0000, NULL,        NULL,  100, 0, NOW(6), NOW(6)),
+(2,  1, 'M / Trang', 150000.0000, NULL,        NULL,  150, 0, NOW(6), NOW(6)),
+(3,  1, 'L / Trang', 150000.0000, NULL,        NULL,  120, 0, NOW(6), NOW(6)),
+(4,  1, 'S / Den',   150000.0000, NULL,        NULL,  80,  0, NOW(6), NOW(6)),
+(5,  1, 'M / Den',   150000.0000, NULL,        NULL,  90,  0, NOW(6), NOW(6)),
+(6,  2, 'M / Xanh',  350000.0000, 315000.0000, 10.00, 50,  0, NOW(6), NOW(6)),
+(7,  2, 'L / Xanh',  350000.0000, 315000.0000, 10.00, 40,  0, NOW(6), NOW(6)),
+(8,  3, 'M / Den',   1200000.0000, NULL,       NULL,  30,  0, NOW(6), NOW(6)),
+(9,  3, 'L / Den',   1200000.0000, NULL,       NULL,  25,  0, NOW(6), NOW(6)),
+(10, 4, '30 / Xanh', 650000.0000, 585000.0000, 10.00, 60,  0, NOW(6), NOW(6)),
+(11, 4, '31 / Xanh', 650000.0000, 585000.0000, 10.00, 55,  0, NOW(6), NOW(6)),
+(12, 5, 'M / Xanh',  250000.0000, NULL,        NULL,  70,  0, NOW(6), NOW(6)),
+(13, 5, 'L / Xanh',  250000.0000, NULL,        NULL,  65,  0, NOW(6), NOW(6)),
+(14, 6, '40 / Den',  3500000.0000, 2800000.0000, 20.00, 15, 0, NOW(6), NOW(6)),
+(15, 6, '41 / Den',  3500000.0000, 2800000.0000, 20.00, 20, 0, NOW(6), NOW(6)),
+(16, 7, 'M / Xam',   1500000.0000, NULL,       NULL,  10,  0, NOW(6), NOW(6)),
+(17, 7, 'L / Xam',   1500000.0000, NULL,       NULL,  12,  0, NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 13. PRODUCT_IMAGES (ProductImage.java)
+-- -------------------------------------------------------------------------
+INSERT INTO `product_images` (`id`, `product_id`, `url_image`, `is_main_image`, `created_at`, `updated_at`) VALUES
+(1, 1, 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500', b'1', NOW(6), NOW(6)),
+(2, 1, 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500', b'0', NOW(6), NOW(6)),
+(3, 2, 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500', b'1', NOW(6), NOW(6)),
+(4, 3, 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500', b'1', NOW(6), NOW(6)),
+(5, 4, 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500', b'1', NOW(6), NOW(6)),
+(6, 6, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500', b'1', NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 14. PRODUCT_TAGS (ProductTag.java)
+-- -------------------------------------------------------------------------
+INSERT INTO `product_tags` (`product_id`, `tag_id`, `created_at`, `updated_at`) VALUES
+(1, 2, NOW(6), NOW(6)),
+(1, 7, NOW(6), NOW(6)),
+(2, 7, NOW(6), NOW(6)),
+(2, 8, NOW(6), NOW(6)),
+(3, 10, NOW(6), NOW(6)),
+(4, 1, NOW(6), NOW(6)),
+(6, 1, NOW(6), NOW(6)),
+(6, 3, NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 15. PROMOTIONS (Promotion.java)
+-- -------------------------------------------------------------------------
+INSERT INTO `promotions` (`id`, `name`, `description`, `start_date`, `end_date`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Chao He Ruc Ro', 'Giam gia cac san pham thoi trang mua he', '2026-06-01 00:00:00.000000', '2026-08-31 23:59:59.000000', b'1', NOW(6), NOW(6)),
+(2, 'Black Friday', 'Dai tiec mua sam giam gia sieu sau', '2026-11-20 00:00:00.000000', '2026-11-30 23:59:59.000000', b'0', NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 16. PROMOTION_PRODUCTS (PromotionProduct.java)
+-- -------------------------------------------------------------------------
+INSERT INTO `promotion_products` (`promotion_id`, `product_variant_id`, `discount_type`, `discount_value`, `created_at`, `updated_at`) VALUES
+(1, 6,  'PERCENTAGE', 10.0000, NOW(6), NOW(6)),
+(1, 7,  'PERCENTAGE', 10.0000, NOW(6), NOW(6)),
+(1, 10, 'PERCENTAGE', 10.0000, NOW(6), NOW(6)),
+(1, 11, 'PERCENTAGE', 10.0000, NOW(6), NOW(6)),
+(1, 14, 'PERCENTAGE', 20.0000, NOW(6), NOW(6)),
+(1, 15, 'PERCENTAGE', 20.0000, NOW(6), NOW(6));

@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -109,14 +108,9 @@ public class OtpServiceImpl implements OtpService {
             }
         }
 
-        // 6. OTP chính xác: sinh token đặt lại mật khẩu
-        String resetToken = UUID.randomUUID().toString();
-        otp.setResetPasswordToken(resetToken);
-        otp.setIsUsed(true);
-        Otp savedOtp = otpRepository.save(otp);
-
+        // 6. OTP chính xác: trả về thông tin xác thực thành công (chưa đánh dấu đã sử dụng, việc sử dụng sẽ được thực hiện khi đổi mật khẩu)
         // 7. Map sang OtpResponse
-        return mapToResponse(savedOtp);
+        return mapToResponse(otp);
     }
 
     @Override
@@ -127,24 +121,48 @@ public class OtpServiceImpl implements OtpService {
             throw new BadRequestException("Mật khẩu xác nhận không khớp");
         }
 
-        // 2. Tìm OTP dựa trên token đặt lại mật khẩu
-        Otp otp = otpRepository.findByResetPasswordToken(request.getToken())
-                .orElseThrow(() -> new NotFoundException("Token đặt lại mật khẩu không hợp lệ hoặc đã được sử dụng"));
+        // 2. Tìm OTP chưa sử dụng gần nhất của email này cho mục đích khôi phục mật khẩu
+        Otp otp = otpRepository.findTopByEmailAndPurposeOrderByCreatedAtDesc(request.getEmail(), OtpPurpose.RESET_PASSWORD)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy mã OTP hợp lệ"));
 
-        // 3. Kiểm tra xem token này có hết hạn chưa (hết hạn sau 15 phút tính từ lúc xác thực OTP thành công)
-        if (otp.getUpdatedAt().plusMinutes(15).isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Token đặt lại mật khẩu đã hết hạn");
+        // 3. Kiểm tra xem OTP đã được sử dụng chưa
+        if (Boolean.TRUE.equals(otp.getIsUsed())) {
+            throw new BadRequestException("Mã OTP này đã được sử dụng trước đó");
         }
 
-        // 4. Cập nhật mật khẩu cho User liên kết với email của OTP
+        // 4. Kiểm tra mã OTP có bị khóa do thử sai quá nhiều không
+        if (otp.getFailedOtpAttempts() >= 5) {
+            throw new BadRequestException("Mã OTP này đã bị vô hiệu hóa do thử sai quá 5 lần");
+        }
+
+        // 5. Kiểm tra xem mã OTP đã hết hạn chưa
+        if (otp.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("Mã OTP đã hết hạn");
+        }
+
+        // 6. Kiểm tra tính chính xác của OTP
+        if (!otp.getOtpCode().equals(request.getOtpCode())) {
+            int attempts = otp.getFailedOtpAttempts() + 1;
+            otp.setFailedOtpAttempts(attempts);
+            otpRepository.save(otp);
+
+            int remaining = 5 - attempts;
+            if (remaining <= 0) {
+                throw new BadRequestException("Mã OTP đã bị vô hiệu hóa do thử sai quá 5 lần");
+            } else {
+                throw new BadRequestException("Mã OTP không chính xác. Bạn còn " + remaining + " lần thử.");
+            }
+        }
+
+        // 7. Cập nhật mật khẩu cho User liên kết với email của OTP
         User user = userRepository.findByEmail(otp.getEmail())
                 .orElseThrow(() -> new NotFoundException("Người dùng liên kết với email này không tồn tại"));
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        // 5. Hủy token sau khi đã đổi mật khẩu thành công để tránh tái sử dụng
-        otp.setResetPasswordToken(null);
+        // 8. Đánh dấu OTP là đã sử dụng
+        otp.setIsUsed(true);
         otpRepository.save(otp);
     }
 
@@ -162,7 +180,6 @@ public class OtpServiceImpl implements OtpService {
         response.setExpiresAt(otp.getExpiresAt());
         response.setIsUsed(otp.getIsUsed());
         response.setFailedOtpAttempts(otp.getFailedOtpAttempts());
-        response.setResetPasswordToken(otp.getResetPasswordToken());
         response.setCreatedAt(otp.getCreatedAt());
         response.setUpdatedAt(otp.getUpdatedAt());
         return response;

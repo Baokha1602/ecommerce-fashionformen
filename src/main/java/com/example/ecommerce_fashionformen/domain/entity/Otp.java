@@ -37,6 +37,4 @@ public class Otp extends AuditableEntity {
     @Column(name = "failed_otp_attempts")
     private int failedOtpAttempts = 0;
 
-    @Column(name = "reset_password_token", length = 255)
-    private String resetPasswordToken;
 }

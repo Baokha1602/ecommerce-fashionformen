@@ -40,9 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private final ModelMapper mapper;
     private final ObjectMapper objectMapper;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tạo đơn hàng (tính phí ship thực tế từ GHN)
-    // ─────────────────────────────────────────────────────────────────────────
+
 
     @Override
     @Transactional

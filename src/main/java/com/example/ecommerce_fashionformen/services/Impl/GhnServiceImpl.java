@@ -62,7 +62,7 @@ public class GhnServiceImpl implements GhnService {
                     .build();
 
             HttpEntity<GhnFeeRequest> request = new HttpEntity<>(payload, buildHeaders());
-            String url = ghnConfig.getBaseUrl() + "/shipping-order/fee";
+            String url = ghnConfig.getBaseUrl() + "/v2/shipping-order/fee";
 
             log.info("[GHN] Tính phí vận chuyển → districtId={}, wardCode={}, qty={}",
                     districtId, wardCode, totalQuantity);
@@ -136,7 +136,7 @@ public class GhnServiceImpl implements GhnService {
                 .build();
 
         HttpEntity<GhnCreateOrderRequest> request = new HttpEntity<>(payload, buildHeaders());
-        String url = ghnConfig.getBaseUrl() + "/shipping-order/create";
+        String url = ghnConfig.getBaseUrl() + "/v2/shipping-order/create";
 
         log.info("[GHN] Tạo đơn vận chuyển → orderId={}, toPhone={}, codAmount={}",
                 order.getId(), order.getPhoneNumber(), codAmount);
@@ -160,13 +160,51 @@ public class GhnServiceImpl implements GhnService {
         return body;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helper
-    // ─────────────────────────────────────────────────────────────────────────
+    @Override
+    public Object getProvinces() {
+        String url = ghnConfig.getBaseUrl() + "/master-data/province";
+        HttpEntity<Void> request = new HttpEntity<>(buildHeaders());
+        try {
+            ResponseEntity<Object> response = restTemplate.exchange(
+                    url, HttpMethod.GET, request, Object.class);
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("[GHN] Lỗi lấy danh sách tỉnh thành: {}", e.getMessage());
+            throw new RuntimeException("Không thể lấy danh sách tỉnh thành từ GHN: " + e.getMessage());
+        }
+    }
 
-    /**
-     * Tạo HttpHeaders chứa GHN Token và ShopId.
-     */
+    @Override
+    public Object getDistricts(int provinceId) {
+        String url = ghnConfig.getBaseUrl() + "/master-data/district";
+        String jsonBody = "{\"province_id\":" + provinceId + "}";
+        HttpEntity<String> request = new HttpEntity<>(jsonBody, buildHeaders());
+        try {
+            ResponseEntity<Object> response = restTemplate.exchange(
+                    url, HttpMethod.POST, request, Object.class);
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("[GHN] Lỗi lấy danh sách quận huyện cho tỉnh {}: {}", provinceId, e.getMessage());
+            throw new RuntimeException("Không thể lấy danh sách quận huyện từ GHN: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Object getWards(int districtId) {
+        String url = ghnConfig.getBaseUrl() + "/master-data/ward";
+        String jsonBody = "{\"district_id\":" + districtId + "}";
+        HttpEntity<String> request = new HttpEntity<>(jsonBody, buildHeaders());
+        try {
+            ResponseEntity<Object> response = restTemplate.exchange(
+                    url, HttpMethod.POST, request, Object.class);
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("[GHN] Lỗi lấy danh sách phường xã cho quận {}: {}", districtId, e.getMessage());
+            throw new RuntimeException("Không thể lấy danh sách phường xã từ GHN: " + e.getMessage());
+        }
+    }
+
+
     private HttpHeaders buildHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

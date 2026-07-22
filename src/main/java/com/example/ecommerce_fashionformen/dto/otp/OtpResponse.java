@@ -18,7 +18,6 @@ public class OtpResponse {
     private LocalDateTime expiresAt;
     private Boolean isUsed;
     private int failedOtpAttempts;
-    private String resetPasswordToken;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

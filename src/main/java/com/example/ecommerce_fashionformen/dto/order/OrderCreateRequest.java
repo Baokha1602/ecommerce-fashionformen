@@ -1,20 +1,16 @@
 package com.example.ecommerce_fashionformen.dto.order;
 
 import com.example.ecommerce_fashionformen.domain.enums.PaymentMethod;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderCreateRequest {
-    @NotNull(message = "ID giỏ hàng không được để trống")
-    private Long cartId;
 
     @NotNull(message = "Địa chỉ người dùng không được để trống")
     private Long userAddressId;
@@ -35,8 +31,7 @@ public class OrderCreateRequest {
 
     private String notes;
 
-    @Valid
-    private List<OrderItemRequest> orderItems;
-
-    private String couponCode;
+    // Không còn nhận orderItems và couponCode từ request body
+    // orderItems lấy từ CartItem trong giỏ hàng hiện tại
+    // couponCode lấy từ Cart.appliedCouponCode
 }

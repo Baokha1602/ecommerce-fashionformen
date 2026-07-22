@@ -82,6 +82,9 @@ public class Order extends AuditableEntity {
     @Column(name = "coupon_discount_amount", nullable = false, precision = 19, scale = 4)
     private BigDecimal couponDiscountAmount = BigDecimal.ZERO;
 
+    @Column(name = "coupon_code", length = 50)
+    private String couponCode;
+
     @Column(name = "notes")
     private String notes;
 

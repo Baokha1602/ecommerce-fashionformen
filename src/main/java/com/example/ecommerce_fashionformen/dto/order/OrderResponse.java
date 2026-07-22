@@ -25,6 +25,9 @@ public class OrderResponse {
     private Boolean isPaid;
     private BigDecimal subtotalOriginal;
     private BigDecimal productDiscountAmount;
+    private BigDecimal rankDiscountAmount;
+    private BigDecimal couponDiscountAmount;
+    private String couponCode;
     private BigDecimal shippingFeeOriginal;
     private BigDecimal shippingFeeActual;
     private BigDecimal taxAmount;

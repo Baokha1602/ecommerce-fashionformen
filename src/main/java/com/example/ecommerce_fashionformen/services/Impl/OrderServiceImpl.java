@@ -1,146 +1,292 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
-import com.example.ecommerce_fashionformen.domain.entity.Order;
-import com.example.ecommerce_fashionformen.domain.entity.OrderItem;
-import com.example.ecommerce_fashionformen.domain.entity.User;
+import com.example.ecommerce_fashionformen.controllers.common.exception.BadRequestException;
+import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
+import com.example.ecommerce_fashionformen.domain.entity.*;
+import com.example.ecommerce_fashionformen.domain.enums.OrderStatus;
 import com.example.ecommerce_fashionformen.dto.order.OrderCreateRequest;
 import com.example.ecommerce_fashionformen.dto.order.OrderResponse;
-import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
-import com.example.ecommerce_fashionformen.repository.OrderItemRepository;
-import com.example.ecommerce_fashionformen.repository.OrderRepository;
-import com.example.ecommerce_fashionformen.repository.UserRepository;
-import com.example.ecommerce_fashionformen.repository.ProductVariantsRepository;
-import com.example.ecommerce_fashionformen.repository.CouponRepository;
-import com.example.ecommerce_fashionformen.domain.entity.ProductVariant;
-import com.example.ecommerce_fashionformen.domain.entity.Coupon;
-import com.example.ecommerce_fashionformen.domain.entity.Rank;
-import com.example.ecommerce_fashionformen.dto.order.OrderItemRequest;
+import com.example.ecommerce_fashionformen.dto.promotion.DiscountResult;
+import com.example.ecommerce_fashionformen.repository.*;
+import com.example.ecommerce_fashionformen.services.CartService;
+import com.example.ecommerce_fashionformen.services.DiscountCalculationService;
 import com.example.ecommerce_fashionformen.services.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
-
-
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final UserRepository userRepository;
     private final ProductVariantsRepository productVariantRepository;
     private final CouponRepository couponRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final CouponUsageHistoryRepository couponUsageHistoryRepository;
+    private final DiscountCalculationService discountCalculationService;
     private final ModelMapper mapper;
 
+    @Value("${app.order.shipping-fee:30000}")
+    private BigDecimal shippingFee;
+
+    /**
+     * Tạo đơn hàng theo transaction chặt chẽ:
+     * 1. Lấy Cart → CartItems (không nhận orderItems từ request)
+     * 2. Lock + kiểm tra tồn kho từng variant (PESSIMISTIC_WRITE)
+     * 3. Tính subtotal, productDiscount
+     * 4. DiscountCalculationService cho coupon/rank
+     * 5. Tạo Order + OrderItems
+     * 6. Tăng stockLock, giảm usageLimit coupon
+     * 7. Xóa CartItems
+     * 8. Rollback toàn bộ nếu lỗi
+     */
     @Override
     @Transactional
     public OrderResponse createOrder(Long userId, OrderCreateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại"));
-                
-        Order order = mapper.map(request, Order.class);
-        order.setUser(user);
-        
+
+        // 1. Lấy giỏ hàng từ Cart (không nhận từ request body)
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new BadRequestException("Giỏ hàng không tồn tại"));
+
+        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
+        if (cartItems.isEmpty()) {
+            throw new BadRequestException("Giỏ hàng trống, không thể tạo đơn hàng");
+        }
+
+        // 2. Lock và kiểm tra tồn kho từng variant
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal productDiscount = BigDecimal.ZERO;
-        
-        // Cần lưu order để có ID cho OrderItem, nhưng tạm thời tính toán trước
-        // Tuy nhiên do cần order_id, ta sẽ save tạm order, sau đó update lại các số tiền
-        order = orderRepository.save(order);
-        
-        if (request.getOrderItems() != null) {
-            for (OrderItemRequest itemReq : request.getOrderItems()) {
-                OrderItem orderItem = mapper.map(itemReq, OrderItem.class);
-                orderItem.setOrder(order);
-                
-                ProductVariant variant = productVariantRepository.findById(itemReq.getProductVariantId())
-                    .orElseThrow(() -> new NotFoundException("Biến thể sản phẩm không tồn tại"));
-                
-                BigDecimal itemPrice = variant.getPrice();
-                BigDecimal itemDiscountPrice = variant.getDiscountPrice() != null ? variant.getDiscountPrice() : itemPrice;
-                
-                orderItem.setPrice(itemDiscountPrice); // Lưu giá thực tế mua
-                
-                BigDecimal qty = new BigDecimal(itemReq.getQuantity());
-                subtotal = subtotal.add(itemPrice.multiply(qty));
-                productDiscount = productDiscount.add(itemPrice.subtract(itemDiscountPrice).multiply(qty));
-                
-                orderItemRepository.save(orderItem);
+        List<ProductVariant> lockedVariants = new ArrayList<>();
+        List<CartItem> validItems = new ArrayList<>();
+
+        for (CartItem cartItem : cartItems) {
+            // Pessimistic lock — SELECT ... FOR UPDATE
+            ProductVariant variant = productVariantRepository.findByIdForUpdate(cartItem.getProductVariantId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Biến thể sản phẩm ID " + cartItem.getProductVariantId() + " không tồn tại"));
+
+            int availableStock = variant.getStockTotal() - variant.getStockLock();
+            if (cartItem.getQuantity() > availableStock) {
+                throw new BadRequestException(
+                        "Sản phẩm \"" + variant.getName() + "\" chỉ còn " + availableStock
+                                + " trong kho, không đủ cho số lượng yêu cầu " + cartItem.getQuantity());
             }
+
+            // 3. Tính subtotal và productDiscount
+            BigDecimal itemPrice = variant.getPrice();
+            BigDecimal itemDiscountPrice = variant.getDiscountPrice() != null
+                    ? variant.getDiscountPrice() : itemPrice;
+            BigDecimal qty = new BigDecimal(cartItem.getQuantity());
+
+            subtotal = subtotal.add(itemPrice.multiply(qty));
+            productDiscount = productDiscount.add(itemPrice.subtract(itemDiscountPrice).multiply(qty));
+
+            lockedVariants.add(variant);
+            validItems.add(cartItem);
         }
-        
+
+        // 4. Tính coupon/rank discount dùng DiscountCalculationService
+        BigDecimal subtotalAfterProductDiscount = subtotal.subtract(productDiscount);
+        String couponCode = cart.getAppliedCouponCode();
+
+        DiscountResult discountResult = discountCalculationService.calculate(
+                subtotalAfterProductDiscount, couponCode, user.getRank());
+
+        // Nếu coupon lỗi nhưng vẫn có mã → báo lỗi rõ ràng
+        if (couponCode != null && !couponCode.isEmpty() && !discountResult.isSuccess()) {
+            throw new BadRequestException("Coupon không hợp lệ: " + discountResult.getErrorMessage());
+        }
+
+        // 5. Tạo Order
+        Order order = new Order();
+        order.setUser(user);
+        order.setUserAddressId(request.getUserAddressId());
+        order.setFirstName(request.getFirstName());
+        order.setLastName(request.getLastName());
+        order.setPhoneNumber(request.getPhoneNumber());
+        order.setEmail(request.getEmail());
+        order.setPaymentMethod(request.getPaymentMethod());
+        order.setNotes(request.getNotes());
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.setIsPaid(false);
+
         order.setSubtotalOriginal(subtotal);
         order.setProductDiscountAmount(productDiscount);
-        
-        BigDecimal rankDiscountAmount = BigDecimal.ZERO;
-        BigDecimal couponDiscountAmount = BigDecimal.ZERO;
-        
-        if (request.getCouponCode() != null && !request.getCouponCode().isEmpty()) {
-            Optional<Coupon> couponOpt = couponRepository.findByCode(request.getCouponCode());
-            if (couponOpt.isPresent()) {
-                Coupon coupon = couponOpt.get();
-                if (Boolean.TRUE.equals(coupon.getIsActive()) && 
-                    LocalDateTime.now().isAfter(coupon.getStartDate()) && 
-                    LocalDateTime.now().isBefore(coupon.getEndDate()) &&
-                    subtotal.subtract(productDiscount).compareTo(coupon.getMinOrderValue()) >= 0) {
-                    
-                    order.setCouponId(coupon.getId());
-                    BigDecimal discountableAmount = subtotal.subtract(productDiscount);
-                    couponDiscountAmount = discountableAmount.multiply(coupon.getDiscountRate()).divide(new BigDecimal("100"));
-                    
-                    if (coupon.getMaxDiscountAmount() != null && couponDiscountAmount.compareTo(coupon.getMaxDiscountAmount()) > 0) {
-                        couponDiscountAmount = coupon.getMaxDiscountAmount();
-                    }
-                }
-            }
-        } else {
-            Rank rank = user.getRank();
-            if (rank != null && rank.getRankDiscount() != null) {
-                BigDecimal discountableAmount = subtotal.subtract(productDiscount);
-                rankDiscountAmount = discountableAmount.multiply(rank.getRankDiscount()).divide(new BigDecimal("100"));
-            }
-        }
-        
-        order.setCouponDiscountAmount(couponDiscountAmount);
-        order.setRankDiscountAmount(rankDiscountAmount);
-        
-        BigDecimal shippingFee = new BigDecimal("30000");
+        order.setCouponDiscountAmount(discountResult.getCouponDiscount());
+        order.setRankDiscountAmount(discountResult.getRankDiscount());
+        order.setCouponId(discountResult.getAppliedCouponId());
+        order.setCouponCode(couponCode);
+
         order.setShippingFeeOriginal(shippingFee);
         order.setShippingFeeActual(shippingFee);
-        
+
         BigDecimal totalOrderAmount = subtotal.add(shippingFee);
         order.setTotalOrderAmount(totalOrderAmount);
-        
-        BigDecimal finalAmount = subtotal.subtract(productDiscount)
-                .subtract(couponDiscountAmount)
-                .subtract(rankDiscountAmount)
+
+        BigDecimal finalAmount = subtotalAfterProductDiscount
+                .subtract(discountResult.getCouponDiscount())
+                .subtract(discountResult.getRankDiscount())
                 .add(shippingFee);
-        
+        if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
+            finalAmount = BigDecimal.ZERO;
+        }
         order.setFinalAmount(finalAmount);
+
         order = orderRepository.save(order);
-        
+
+        // Tạo OrderItems
+        for (int i = 0; i < validItems.size(); i++) {
+            CartItem cartItem = validItems.get(i);
+            ProductVariant variant = lockedVariants.get(i);
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProductVariantId(cartItem.getProductVariantId());
+            orderItem.setQuantity(cartItem.getQuantity());
+
+            BigDecimal effectivePrice = variant.getDiscountPrice() != null
+                    ? variant.getDiscountPrice() : variant.getPrice();
+            orderItem.setPrice(effectivePrice);
+
+            orderItemRepository.save(orderItem);
+        }
+
+        // 6. Tăng stockLock — giữ chỗ hàng (stockTotal chỉ trừ khi DELIVERED)
+        for (int i = 0; i < validItems.size(); i++) {
+            ProductVariant variant = lockedVariants.get(i);
+            CartItem cartItem = validItems.get(i);
+            variant.setStockLock(variant.getStockLock() + cartItem.getQuantity());
+            productVariantRepository.save(variant);
+        }
+
+        // 7. Giảm usageLimit coupon (pessimistic lock)
+        if (discountResult.getAppliedCouponId() != null) {
+            Coupon coupon = couponRepository.findByCodeForUpdate(couponCode)
+                    .orElseThrow(() -> new BadRequestException("Mã giảm giá không tồn tại"));
+
+            if (coupon.getUsageLimit() != null && coupon.getUsageLimit() <= 0) {
+                throw new BadRequestException("Mã giảm giá đã hết lượt sử dụng");
+            }
+
+            coupon.setUsageLimit(coupon.getUsageLimit() - 1);
+            couponRepository.save(coupon);
+
+            // Lưu lịch sử sử dụng coupon
+            CouponUsageHistory usage = CouponUsageHistory.builder()
+                    .coupon(coupon)
+                    .order(order)
+                    .user(user)
+                    .usedAt(LocalDateTime.now())
+                    .build();
+            couponUsageHistoryRepository.save(usage);
+        }
+
+        // Lưu OrderStatusHistory
+        OrderStatusHistory statusHistory = OrderStatusHistory.builder()
+                .order(order)
+                .status(OrderStatus.PENDING)
+                .changedBy(user.getUsername())
+                .changedAt(LocalDateTime.now())
+                .note("Đơn hàng được tạo")
+                .build();
+        orderStatusHistoryRepository.save(statusHistory);
+
+        // 8. Xóa toàn bộ CartItem + reset coupon
+        cartItemRepository.deleteAllByCartId(cart.getId());
+        cart.setAppliedCouponCode(null);
+        cartRepository.save(cart);
+
         return mapper.map(order, OrderResponse.class);
     }
 
     @Override
-    public List<OrderResponse> getOrderHistory(Long userId) {
-        return orderRepository.findAll().stream()
-                .filter(o -> o.getUser() != null && o.getUser().getId().equals(userId))
-                .map(o -> mapper.map(o, OrderResponse.class))
-                .collect(Collectors.toList());
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> getOrderHistory(Long userId, Pageable pageable) {
+        return orderRepository.findByUserId(userId, pageable)
+                .map(o -> mapper.map(o, OrderResponse.class));
     }
 
     @Override
-    public OrderResponse getOrderDetails(Long orderId) {
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderDetails(Long userId, Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Đơn hàng không tồn tại"));
+
+        // Kiểm tra ownership (chỉ xem đơn của mình)
+        if (!order.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Bạn không có quyền xem đơn hàng này");
+        }
+
+        return mapper.map(order, OrderResponse.class);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse cancelOrder(Long userId, Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Đơn hàng không tồn tại"));
+
+        if (!order.getUser().getId().equals(userId)) {
+            throw new BadRequestException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        // Chỉ cho hủy khi đơn ở PENDING hoặc PROCESSING
+        if (order.getOrderStatus() != OrderStatus.PENDING
+                && order.getOrderStatus() != OrderStatus.PROCESSING) {
+            throw new BadRequestException("Không thể hủy đơn hàng ở trạng thái "
+                    + order.getOrderStatus().name() + ". Chỉ có thể hủy khi đơn ở trạng thái PENDING hoặc PROCESSING");
+        }
+
+        // Nhả stockLock
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+        for (OrderItem item : orderItems) {
+            ProductVariant variant = productVariantRepository.findByIdForUpdate(item.getProductVariantId())
+                    .orElse(null);
+            if (variant != null) {
+                variant.setStockLock(Math.max(0, variant.getStockLock() - item.getQuantity()));
+                productVariantRepository.save(variant);
+            }
+        }
+
+        // Hoàn usageLimit coupon nếu có
+        if (order.getCouponId() != null) {
+            Coupon coupon = couponRepository.findById(order.getCouponId()).orElse(null);
+            if (coupon != null) {
+                coupon.setUsageLimit(coupon.getUsageLimit() + 1);
+                couponRepository.save(coupon);
+            }
+        }
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        // Lưu status history
+        User user = userRepository.findById(userId).orElse(null);
+        OrderStatusHistory statusHistory = OrderStatusHistory.builder()
+                .order(order)
+                .status(OrderStatus.CANCELLED)
+                .changedBy(user != null ? user.getUsername() : "customer")
+                .changedAt(LocalDateTime.now())
+                .note("Khách hàng tự hủy đơn")
+                .build();
+        orderStatusHistoryRepository.save(statusHistory);
+
         return mapper.map(order, OrderResponse.class);
     }
 }

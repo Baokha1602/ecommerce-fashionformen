@@ -4,16 +4,20 @@ import com.example.ecommerce_fashionformen.controllers.common.exception.BadReque
 import com.example.ecommerce_fashionformen.controllers.common.exception.ConflictException;
 import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Coupon;
+import com.example.ecommerce_fashionformen.domain.entity.CouponUsageHistory;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponCreateRequest;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponResponse;
 import com.example.ecommerce_fashionformen.dto.coupon.CouponUpdateRequest;
+import com.example.ecommerce_fashionformen.dto.coupon.CouponUsageHistoryResponse;
 import com.example.ecommerce_fashionformen.repository.CouponRepository;
+import com.example.ecommerce_fashionformen.repository.CouponUsageHistoryRepository;
 import com.example.ecommerce_fashionformen.services.CouponService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -21,6 +25,7 @@ import java.util.List;
 public class CouponServiceImpl implements CouponService {
 
     private final CouponRepository couponRepository;
+    private final CouponUsageHistoryRepository couponUsageHistoryRepository;
     private final ModelMapper mapper;
 
     private CouponResponse mapToResponse(Coupon coupon) {
@@ -116,5 +121,35 @@ public class CouponServiceImpl implements CouponService {
         Coupon coupon = couponRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá với ID: " + id));
         couponRepository.delete(coupon);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponResponse> getAvailableCoupons() {
+        LocalDateTime now = LocalDateTime.now();
+        return couponRepository.findAvailableCoupons(now).stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CouponUsageHistoryResponse> getCouponUsageHistory(Long couponId) {
+        // Verify coupon exists
+        couponRepository.findById(couponId)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá với ID: " + couponId));
+
+        return couponUsageHistoryRepository.findByCouponId(couponId).stream()
+                .map(usage -> {
+                    CouponUsageHistoryResponse resp = new CouponUsageHistoryResponse();
+                    resp.setId(usage.getId());
+                    resp.setCouponId(usage.getCoupon().getId());
+                    resp.setCouponCode(usage.getCoupon().getCode());
+                    resp.setOrderId(usage.getOrder().getId());
+                    resp.setUserId(usage.getUser().getId());
+                    resp.setUsedAt(usage.getUsedAt());
+                    return resp;
+                })
+                .toList();
     }
 }

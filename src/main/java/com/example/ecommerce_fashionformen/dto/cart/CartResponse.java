@@ -12,11 +12,14 @@ import java.util.List;
 public class CartResponse {
     private Long id;
     private Long userId;
+    private String appliedCouponCode;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<CartItemResponse> cartItems;
     private java.math.BigDecimal subtotal;
     private java.math.BigDecimal productDiscount;
     private java.math.BigDecimal couponDiscount;
+    private java.math.BigDecimal rankDiscount;
+    private java.math.BigDecimal shippingFee;
     private java.math.BigDecimal finalAmount;
 }

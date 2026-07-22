@@ -49,5 +49,9 @@ public class ProductVariant extends AuditableEntity {
             inverseJoinColumns = @JoinColumn(name = "attribute_value_id")
     )
     private Set<AttributeValue> attributeValues = new HashSet<>();
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
 }
 

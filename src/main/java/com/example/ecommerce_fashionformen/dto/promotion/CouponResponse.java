@@ -22,4 +22,5 @@ public class CouponResponse {
     private Boolean isActive;
     private boolean isValid;
     private String message;
+    private BigDecimal actualDiscountAmount;
 }

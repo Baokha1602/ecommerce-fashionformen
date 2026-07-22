@@ -9,4 +9,6 @@ public interface CartService {
     CartResponse updateCartItem(Long userId, Long cartItemId, CartItemRequest request);
     CartResponse removeCartItem(Long userId, Long cartItemId);
     CartResponse applyCoupon(Long userId, String couponCode);
+    CartResponse removeCoupon(Long userId);
+    void clearCart(Long userId);
 }

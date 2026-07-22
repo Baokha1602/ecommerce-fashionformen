@@ -8,7 +8,5 @@ import java.util.List;
 
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
-
-    /** Lấy tất cả OrderItem theo ID đơn hàng (qua quan hệ Order.id) */
-    List<OrderItem> findByOrder_Id(Long orderId);
+    List<OrderItem> findByOrderId(Long orderId);
 }

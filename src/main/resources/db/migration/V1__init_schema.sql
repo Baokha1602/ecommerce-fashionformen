@@ -1,6 +1,11 @@
 -- =========================================================================
+-- V1: KHỞI TẠO TOÀN BỘ SCHEMA
+-- Gộp: V1 gốc + V3 (shipments, order_status_history) + V4 (EAV, coupon_usage_history)
+-- Tất cả các bảng đều có created_at, updated_at theo AuditableEntity
+-- =========================================================================
+
+-- =========================================================================
 -- BƯỚC 1: CÁC BẢNG ĐỘC LẬP (Không chứa khóa ngoại tham chiếu bảng khác)
--- NOTE: Tất cả các bảng đều có created_at, updated_at để đồng nhất với AuditableEntity
 -- =========================================================================
 
 -- Rank: khớp với Rank.java (extends AuditableEntity)
@@ -39,7 +44,7 @@ CREATE TABLE `tags` (
     `updated_at`  DATETIME(6) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Promotion: chưa có entity Java, giữ lại + thêm audit columns
+-- Promotion
 CREATE TABLE `promotions` (
     `id`          BIGINT AUTO_INCREMENT PRIMARY KEY,
     `name`        VARCHAR(255) NOT NULL,
@@ -83,19 +88,36 @@ CREATE TABLE `banners` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Otp: khớp với Otp.java (extends AuditableEntity)
--- Xóa cột `create_at` sai chính tả, thay bằng `created_at`/`updated_at` chuẩn
 -- OtpPurpose enum: REGISTER, LOGIN, RESET_PASSWORD
+-- NOTE: Không có cột reset_password_token (đã bị loại bỏ)
 CREATE TABLE `otps` (
-    `id`                   BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `otp_code`             VARCHAR(6) NOT NULL,
-    `email`                VARCHAR(100) NOT NULL,
-    `expires_at`           DATETIME(6) NOT NULL,
-    `is_used`              BIT(1) DEFAULT b'0',
-    `purpose`              ENUM('REGISTER', 'LOGIN', 'RESET_PASSWORD') NOT NULL,
-    `failed_otp_attempts`  INT DEFAULT 0,
-    `reset_password_token` VARCHAR(255) DEFAULT NULL,
-    `created_at`           DATETIME(6) NOT NULL,
-    `updated_at`           DATETIME(6) NOT NULL
+    `id`                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `otp_code`            VARCHAR(6) NOT NULL,
+    `email`               VARCHAR(100) NOT NULL,
+    `expires_at`          DATETIME(6) NOT NULL,
+    `is_used`             BIT(1) DEFAULT b'0',
+    `purpose`             ENUM('REGISTER', 'LOGIN', 'RESET_PASSWORD') NOT NULL,
+    `failed_otp_attempts` INT DEFAULT 0,
+    `created_at`          DATETIME(6) NOT NULL,
+    `updated_at`          DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- EAV: Attribute (tên thuộc tính, vd: Màu sắc, Size)
+CREATE TABLE `attributes` (
+    `id`         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `name`       VARCHAR(255) NOT NULL,
+    `created_at` DATETIME(6) NOT NULL,
+    `updated_at` DATETIME(6) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- EAV: AttributeValue (giá trị thuộc tính, vd: Đỏ, XL)
+CREATE TABLE `attribute_values` (
+    `id`           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `attribute_id` BIGINT NOT NULL,
+    `value`        VARCHAR(255) NOT NULL,
+    `created_at`   DATETIME(6) NOT NULL,
+    `updated_at`   DATETIME(6) NOT NULL,
+    CONSTRAINT `fk_attribute_value_attribute` FOREIGN KEY (`attribute_id`) REFERENCES `attributes` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- =========================================================================
@@ -103,14 +125,6 @@ CREATE TABLE `otps` (
 -- =========================================================================
 
 -- User: khớp với User.java (extends AuditableEntity)
--- Thay đổi so với cũ:
---   user_name   -> username       (khớp @Column không có name= trong entity)
---   password    -> password_hash  (khớp @Column(name = "password_hash"))
---   first_name + last_name -> full_name  (entity dùng fullName/@Column(name="full_name"))
---   phone_number -> phone         (khớp @Column không có name= trong entity)
---   Xóa gender                    (entity không có trường gender)
---   Thêm avatar_url               (entity có avatarUrl/@Column(name="avatar_url"))
---   Thêm is_active                (entity có isActive/@Column(name="is_active"))
 -- UserRole enum: ADMIN, CUSTOMER, STAFF
 CREATE TABLE `users` (
     `id`            BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -130,7 +144,7 @@ CREATE TABLE `users` (
     FOREIGN KEY (`rank_id`) REFERENCES `ranks` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Product: chưa có entity Java, giữ lại + thêm audit columns
+-- Product
 CREATE TABLE `products` (
     `id`            BIGINT AUTO_INCREMENT PRIMARY KEY,
     `category_id`   BIGINT NOT NULL,
@@ -168,7 +182,6 @@ CREATE TABLE `user_address` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- RefreshTokenSession: khớp với RefreshTokenSession.java (extends AuditableEntity)
--- Bảng này CHƯA có trong file SQL cũ, thêm mới để đồng nhất với entity
 CREATE TABLE `refresh_token_sessions` (
     `id`               BIGINT AUTO_INCREMENT PRIMARY KEY,
     `jti`              VARCHAR(100) NOT NULL UNIQUE,
@@ -181,7 +194,8 @@ CREATE TABLE `refresh_token_sessions` (
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ProductVariant: chưa có entity Java, giữ lại + thêm audit columns
+-- ProductVariant
+-- NOTE: Có cột version cho optimistic locking
 CREATE TABLE `product_variants` (
     `id`             BIGINT AUTO_INCREMENT PRIMARY KEY,
     `product_id`     BIGINT NOT NULL,
@@ -191,12 +205,22 @@ CREATE TABLE `product_variants` (
     `discount_rate`  DECIMAL(5,2) DEFAULT NULL,
     `stock_total`    INT NOT NULL DEFAULT 0,
     `stock_lock`     INT NOT NULL DEFAULT 0,
+    `version`        BIGINT NOT NULL DEFAULT 0,
     `created_at`     DATETIME(6) NOT NULL,
     `updated_at`     DATETIME(6) NOT NULL,
     FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- PromotionProduct: chưa có entity Java, giữ lại + thêm audit columns
+-- VariantAttributeValue: EAV join table
+CREATE TABLE `variant_attribute_values` (
+    `variant_id`         BIGINT NOT NULL,
+    `attribute_value_id` BIGINT NOT NULL,
+    PRIMARY KEY (`variant_id`, `attribute_value_id`),
+    CONSTRAINT `fk_variant_attribute_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_variant_attribute_value`   FOREIGN KEY (`attribute_value_id`) REFERENCES `attribute_values` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- PromotionProduct
 CREATE TABLE `promotion_products` (
     `id`                 BIGINT AUTO_INCREMENT PRIMARY KEY,
     `promotion_id`       BIGINT NOT NULL,
@@ -210,7 +234,7 @@ CREATE TABLE `promotion_products` (
     UNIQUE KEY `uq_promotion_variant` (`promotion_id`, `product_variant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ProductImage: chưa có entity Java, giữ lại + thêm audit columns
+-- ProductImage
 CREATE TABLE `product_images` (
     `id`            BIGINT AUTO_INCREMENT PRIMARY KEY,
     `product_id`    BIGINT NOT NULL,
@@ -221,7 +245,7 @@ CREATE TABLE `product_images` (
     FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ProductTag: chưa có entity Java, giữ lại + thêm audit columns
+-- ProductTag
 CREATE TABLE `product_tags` (
     `id`         BIGINT AUTO_INCREMENT PRIMARY KEY,
     `product_id` BIGINT NOT NULL,
@@ -232,7 +256,7 @@ CREATE TABLE `product_tags` (
     FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ProductReview: chưa có entity Java, giữ lại + thêm audit columns
+-- ProductReview
 CREATE TABLE `product_reviews` (
     `id`         BIGINT AUTO_INCREMENT PRIMARY KEY,
     `product_id` BIGINT NOT NULL,
@@ -246,12 +270,14 @@ CREATE TABLE `product_reviews` (
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Cart: chưa có entity Java, giữ lại + thêm audit columns
+-- Cart: 1 user chỉ có 1 cart
+-- NOTE: Có cột applied_coupon_code để lưu mã coupon đang áp dụng
 CREATE TABLE `carts` (
-    `id`         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `user_id`    BIGINT NOT NULL UNIQUE,
-    `created_at` DATETIME(6) NOT NULL,
-    `updated_at` DATETIME(6) NOT NULL,
+    `id`                  BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `user_id`             BIGINT NOT NULL UNIQUE,
+    `applied_coupon_code` VARCHAR(255) DEFAULT NULL,
+    `created_at`          DATETIME(6) NOT NULL,
+    `updated_at`          DATETIME(6) NOT NULL,
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -259,7 +285,7 @@ CREATE TABLE `carts` (
 -- BƯỚC 4: CÁC BẢNG HOÀN THIỆN LUỒNG GIAO DỊCH
 -- =========================================================================
 
--- CartItem: chưa có entity Java, giữ lại + thêm audit columns
+-- CartItem
 CREATE TABLE `cart_items` (
     `id`                 BIGINT AUTO_INCREMENT PRIMARY KEY,
     `cart_id`            BIGINT NOT NULL,
@@ -272,12 +298,14 @@ CREATE TABLE `cart_items` (
     UNIQUE KEY `uq_cart_variant` (`cart_id`, `product_variant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Order: chưa có entity Java, giữ lại + thêm audit columns
+-- Order
+-- NOTE: Có cột coupon_code để lưu text mã coupon đã dùng
 CREATE TABLE `orders` (
     `id`                      BIGINT AUTO_INCREMENT PRIMARY KEY,
     `user_id`                 BIGINT DEFAULT NULL,
     `user_address_id`         BIGINT DEFAULT NULL,
     `coupon_id`               BIGINT DEFAULT NULL,
+    `coupon_code`             VARCHAR(50) DEFAULT NULL,
     `first_name`              VARCHAR(100) NOT NULL,
     `last_name`               VARCHAR(50) NOT NULL,
     `phone_number`            VARCHAR(15) NOT NULL,
@@ -302,7 +330,7 @@ CREATE TABLE `orders` (
     FOREIGN KEY (`coupon_id`) REFERENCES `coupons` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- OrderItem: chưa có entity Java, giữ lại + thêm audit columns
+-- OrderItem
 CREATE TABLE `order_items` (
     `id`                 BIGINT AUTO_INCREMENT PRIMARY KEY,
     `order_id`           BIGINT NOT NULL,
@@ -315,18 +343,58 @@ CREATE TABLE `order_items` (
     FOREIGN KEY (`product_variant_id`) REFERENCES `product_variants` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- OrderStatusHistory: lưu lịch sử thay đổi trạng thái đơn hàng
+CREATE TABLE `order_status_history` (
+    `id`         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `order_id`   BIGINT NOT NULL,
+    `status`     VARCHAR(50) NOT NULL,
+    `changed_by` VARCHAR(255) DEFAULT NULL,
+    `changed_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    `note`       TEXT DEFAULT NULL,
+    CONSTRAINT `fk_order_history_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Shipments: thông tin vận đơn GHN (1 đơn hàng = 1 vận đơn)
+CREATE TABLE `shipments` (
+    `id`                     BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `order_id`               BIGINT NOT NULL UNIQUE,
+    `ghn_order_code`         VARCHAR(100) NOT NULL,
+    `expected_delivery_time` VARCHAR(50) DEFAULT NULL,
+    `cod_amount`             DECIMAL(19,4) NOT NULL DEFAULT 0.0000,
+    `total_weight`           INT DEFAULT NULL,
+    `total_fee`              DECIMAL(19,4) DEFAULT NULL,
+    `ghn_raw_response`       TEXT DEFAULT NULL,
+    `created_at`             DATETIME(6) NOT NULL,
+    `updated_at`             DATETIME(6) NOT NULL,
+    CONSTRAINT `fk_shipments_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- CouponUsageHistory: lịch sử sử dụng coupon (coupon nào dùng trong đơn nào)
+CREATE TABLE `coupon_usage_history` (
+    `id`        BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `coupon_id` BIGINT NOT NULL,
+    `order_id`  BIGINT NOT NULL,
+    `user_id`   BIGINT NOT NULL,
+    `used_at`   DATETIME(6) NOT NULL,
+    FOREIGN KEY (`coupon_id`) REFERENCES `coupons` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- =========================================================================
--- ĐÁNH CHỈ MỤC LOGIC TỐI ƯU HÓA TRUY VẤN
+-- ĐÁNH CHỈ MỤC TỐI ƯU HÓA TRUY VẤN
 -- =========================================================================
-CREATE INDEX `idx_users_username`      ON `users` (`username`);         -- Sửa từ user_name -> username
-CREATE INDEX `idx_products_category`   ON `products` (`category_id`);
-CREATE INDEX `idx_products_brand`      ON `products` (`brand_id`);
-CREATE INDEX `idx_products_sold`       ON `products` (`sold_quantity` DESC);
-CREATE INDEX `idx_variants_product`    ON `product_variants` (`product_id`);
-CREATE INDEX `idx_orders_user_status`  ON `orders` (`user_id`, `order_status`);
-CREATE INDEX `idx_order_items_order`   ON `order_items` (`order_id`);
-CREATE INDEX `idx_promotions_date`     ON `promotions` (`start_date`, `end_date`);
-CREATE INDEX `idx_coupons_date`        ON `coupons` (`start_date`, `end_date`);
-CREATE INDEX `idx_banners_order`       ON `banners` (`display_order`, `is_active`);
-CREATE INDEX `idx_refresh_token_jti`   ON `refresh_token_sessions` (`jti`);
-CREATE INDEX `idx_refresh_token_user`  ON `refresh_token_sessions` (`user_id`);
+CREATE INDEX `idx_users_username`       ON `users` (`username`);
+CREATE INDEX `idx_products_category`    ON `products` (`category_id`);
+CREATE INDEX `idx_products_brand`       ON `products` (`brand_id`);
+CREATE INDEX `idx_products_sold`        ON `products` (`sold_quantity` DESC);
+CREATE INDEX `idx_variants_product`     ON `product_variants` (`product_id`);
+CREATE INDEX `idx_orders_user_status`   ON `orders` (`user_id`, `order_status`);
+CREATE INDEX `idx_order_items_order`    ON `order_items` (`order_id`);
+CREATE INDEX `idx_promotions_date`      ON `promotions` (`start_date`, `end_date`);
+CREATE INDEX `idx_coupons_date`         ON `coupons` (`start_date`, `end_date`);
+CREATE INDEX `idx_banners_order`        ON `banners` (`display_order`, `is_active`);
+CREATE INDEX `idx_refresh_token_jti`    ON `refresh_token_sessions` (`jti`);
+CREATE INDEX `idx_refresh_token_user`   ON `refresh_token_sessions` (`user_id`);
+CREATE INDEX `idx_coupon_usage_coupon`  ON `coupon_usage_history` (`coupon_id`);
+CREATE INDEX `idx_coupon_usage_order`   ON `coupon_usage_history` (`order_id`);

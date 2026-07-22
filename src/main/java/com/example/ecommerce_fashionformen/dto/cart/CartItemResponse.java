@@ -12,9 +12,11 @@ public class CartItemResponse {
     private Long id;
     private Long cartId;
     private Long productVariantId;
+    private String productVariantName;
     private Integer quantity;
     private java.math.BigDecimal price;
     private java.math.BigDecimal discountPrice;
+    private Boolean unavailable;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

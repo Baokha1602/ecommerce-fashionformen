@@ -1,49 +1,36 @@
 package com.example.ecommerce_fashionformen.controllers;
 
-import com.example.ecommerce_fashionformen.dto.promotion.PromotionCreateRequest;
+import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
+import com.example.ecommerce_fashionformen.dto.promotion.CouponResponse;
 import com.example.ecommerce_fashionformen.dto.promotion.PromotionResponse;
 import com.example.ecommerce_fashionformen.services.PromotionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
-import jakarta.validation.Valid;
 
+/**
+ * Public endpoints cho khách hàng: xem khuyến mãi đang chạy, validate coupon.
+ * CRUD admin endpoints đã chuyển sang AdminPromotionController.
+ */
 @RestController
 @RequestMapping("/api/promotions")
 @RequiredArgsConstructor
 public class PromotionController {
     private final PromotionService promotionService;
 
-    @PostMapping
-    public ResponseEntity<PromotionResponse> createPromotion(@RequestBody @Valid PromotionCreateRequest request) {
-        return ResponseEntity.ok(promotionService.createPromotion(request));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<PromotionResponse> updatePromotion(@PathVariable Long id, @RequestBody @Valid PromotionCreateRequest request) {
-        return ResponseEntity.ok(promotionService.updatePromotion(id, request));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePromotion(@PathVariable Long id) {
-        promotionService.deletePromotion(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<PromotionResponse> getPromotion(@PathVariable Long id) {
-        return ResponseEntity.ok(promotionService.getPromotion(id));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<PromotionResponse>> getAllPromotions() {
-        return ResponseEntity.ok(promotionService.getAllPromotions());
+    @GetMapping("/active")
+    public ApiResponse<List<PromotionResponse>> getActivePromotions() {
+        return ApiResponse.success("Lấy danh sách khuyến mãi đang chạy thành công",
+                promotionService.getActivePromotions());
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<com.example.ecommerce_fashionformen.dto.promotion.CouponResponse> validateCoupon(@RequestParam String couponCode) {
-        return ResponseEntity.ok(promotionService.validateCoupon(couponCode));
+    public ApiResponse<CouponResponse> validateCoupon(
+            @RequestParam String couponCode,
+            @RequestParam(required = false) BigDecimal orderAmount) {
+        return ApiResponse.success("Kiểm tra mã giảm giá thành công",
+                promotionService.validateCoupon(couponCode, orderAmount));
     }
 }

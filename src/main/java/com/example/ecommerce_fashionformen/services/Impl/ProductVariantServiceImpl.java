@@ -13,6 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
+import com.example.ecommerce_fashionformen.domain.entity.AttributeValue;
+import com.example.ecommerce_fashionformen.repository.AttributeValueRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +26,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
 
     private final ProductVariantsRepository productVariantsRepository;
     private final ProductRepository productRepository;
+    private final AttributeValueRepository attributeValueRepository;
 
     private ProductVariantResponse mapToResponse(ProductVariant entity) {
         ProductVariantResponse response = new ProductVariantResponse();
@@ -34,6 +41,15 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         response.setDiscountRate(entity.getDiscountRate());
         response.setStockTotal(entity.getStockTotal());
         response.setStockLock(entity.getStockLock());
+        
+        if (entity.getAttributeValues() != null) {
+            Map<String, String> attrs = new HashMap<>();
+            for (AttributeValue av : entity.getAttributeValues()) {
+                attrs.put(av.getAttribute().getName(), av.getValue());
+            }
+            response.setAttributes(attrs);
+        }
+
         response.setCreatedAt(entity.getCreatedAt());
         response.setUpdatedAt(entity.getUpdatedAt());
         return response;
@@ -67,6 +83,12 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         entity.setDiscountRate(request.getDiscountRate());
         entity.setStockTotal(request.getStockTotal() != null ? request.getStockTotal() : 0);
         entity.setStockLock(request.getStockLock() != null ? request.getStockLock() : 0);
+
+        if (request.getAttributeValueIds() != null && !request.getAttributeValueIds().isEmpty()) {
+            List<AttributeValue> attributeValues = attributeValueRepository.findAllById(request.getAttributeValueIds());
+            entity.setAttributeValues(new HashSet<>(attributeValues));
+        }
+
         return mapToResponse(productVariantsRepository.save(entity));
     }
 
@@ -85,6 +107,12 @@ public class ProductVariantServiceImpl implements ProductVariantService {
         if (request.getDiscountRate() != null) entity.setDiscountRate(request.getDiscountRate());
         if (request.getStockTotal() != null) entity.setStockTotal(request.getStockTotal());
         if (request.getStockLock() != null) entity.setStockLock(request.getStockLock());
+
+        if (request.getAttributeValueIds() != null) {
+            List<AttributeValue> attributeValues = attributeValueRepository.findAllById(request.getAttributeValueIds());
+            entity.setAttributeValues(new HashSet<>(attributeValues));
+        }
+
         return mapToResponse(productVariantsRepository.save(entity));
     }
 

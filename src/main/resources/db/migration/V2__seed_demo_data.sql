@@ -143,3 +143,127 @@ INSERT INTO `refresh_token_sessions` (`jti`, `user_id`, `expires_at`, `revoked_a
 ('b2c3d4e5-0004-0004-0004-99aabbccddee', 4, '2026-07-23 05:00:00.000000', NULL,                          NULL,                                   NOW(6), NOW(6)),
 -- khachhang05 dang dang nhap (user_id=7)
 ('c3d4e5f6-0005-0005-0005-8899aabbccdd', 7, '2026-07-23 06:00:00.000000', NULL,                          NULL,                                   NOW(6), NOW(6));
+
+
+-- -------------------------------------------------------------------------
+-- 11. PROMOTIONS (Chương trình khuyến mãi)
+-- -------------------------------------------------------------------------
+INSERT INTO `promotions` (`name`, `description`, `start_date`, `end_date`, `is_active`, `created_at`, `updated_at`) VALUES
+                                                                                                                        ('Summer Sale 2026',   'Giam gia cac mat hang mua he', '2026-06-01 00:00:00.000000', '2026-08-31 23:59:59.000000', b'1', NOW(6), NOW(6)),
+                                                                                                                        ('Flash Sale Tuan Le', 'Giam gia shock trong tuan',    '2026-07-10 00:00:00.000000', '2026-07-20 23:59:59.000000', b'1', NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 12. PRODUCTS (Sản phẩm)
+-- Phụ thuộc: categories, brands
+-- -------------------------------------------------------------------------
+INSERT INTO `products` (`category_id`, `brand_id`, `name`, `description`, `sold_quantity`, `created_at`, `updated_at`) VALUES
+                                                                                                                           (5,  5, 'Ao Thun Nam Basic Routine',     'Ao thun cotton 100% thoang mat, form mau sac co ban de phoi do.', 150, NOW(6), NOW(6)), -- ID 1
+                                                                                                                           (13, 1, 'Giay The Thao Nike Air Force 1','Huyen thoai sneaker tu Nike, thiet ke co dien, nang dong.',      320, NOW(6), NOW(6)), -- ID 2
+                                                                                                                           (9,  4, 'Quan Jeans Nam Slimfit H&M',    'Quan jeans phom om vua phai, chat lieu co gian nhe, thoai mai.', 85,  NOW(6), NOW(6)), -- ID 3
+                                                                                                                           (6,  6, 'Ao So Mi Trang Cong So BILUXURY','Ao so mi nam cao cap, chong nhan, phu hop di lam, di tiec.',    210, NOW(6), NOW(6)), -- ID 4
+                                                                                                                           (17, 2, 'Mu Luoi Trai Adidas Thoi Trang','Mu the thao Adidas chat lieu kaki cao cap, tham hut mo hoi.',   45,  NOW(6), NOW(6)); -- ID 5
+
+-- -------------------------------------------------------------------------
+-- 13. PRODUCT_VARIANTS (Biến thể sản phẩm)
+-- Phụ thuộc: products
+-- -------------------------------------------------------------------------
+INSERT INTO `product_variants` (`product_id`, `name`, `price`, `discount_price`, `discount_rate`, `stock_total`, `stock_lock`, `created_at`, `updated_at`) VALUES
+-- Áo thun Routine (Product 1)
+(1, 'Den - Size M',  250000.0000, 200000.0000, 20.00, 100, 5, NOW(6), NOW(6)), -- ID 1
+(1, 'Trang - Size L',250000.0000, 200000.0000, 20.00, 100, 2, NOW(6), NOW(6)), -- ID 2
+-- Giày Nike (Product 2)
+(2, 'Trang - Size 42',2500000.0000, NULL,     NULL,  50,  0, NOW(6), NOW(6)), -- ID 3
+(2, 'Den - Size 43',  2500000.0000, NULL,     NULL,  30,  1, NOW(6), NOW(6)), -- ID 4
+-- Quần Jeans H&M (Product 3)
+(3, 'Xanh Dam - Size 32', 650000.0000, 585000.0000, 10.00, 200, 0, NOW(6), NOW(6)), -- ID 5
+-- Áo sơ mi BILUXURY (Product 4)
+(4, 'Trang - Size 40',450000.0000, NULL,      NULL,  120, 10,NOW(6), NOW(6)), -- ID 6
+-- Mũ Adidas (Product 5)
+(5, 'Den - Freesize', 350000.0000, 300000.0000, 14.28, 80,  0, NOW(6), NOW(6)); -- ID 7
+
+-- -------------------------------------------------------------------------
+-- 14. PROMOTION_PRODUCTS (Liên kết Khuyến mãi - Biến thể)
+-- DiscountType enum: PERCENTAGE, FIXED
+-- -------------------------------------------------------------------------
+INSERT INTO `promotion_products` (`promotion_id`, `product_variant_id`, `discount_type`, `discount_value`, `created_at`, `updated_at`) VALUES
+                                                                                                                                           (1, 1, 'PERCENTAGE', 20.0000, NOW(6), NOW(6)), -- Promo Summer cho Áo thun Đen M
+                                                                                                                                           (1, 2, 'PERCENTAGE', 20.0000, NOW(6), NOW(6)), -- Promo Summer cho Áo thun Trắng L
+                                                                                                                                           (2, 7, 'FIXED',      50000.0000, NOW(6), NOW(6)); -- Promo Flash sale cho Mũ (Giảm cứng 50k)
+
+-- -------------------------------------------------------------------------
+-- 15. PRODUCT_IMAGES (Hình ảnh sản phẩm)
+-- -------------------------------------------------------------------------
+INSERT INTO `product_images` (`product_id`, `url_image`, `is_main_image`, `created_at`, `updated_at`) VALUES
+                                                                                                          (1, 'https://routine.vn/media/catalog/product/ao-thun-nam-1.jpg', b'1', NOW(6), NOW(6)),
+                                                                                                          (1, 'https://routine.vn/media/catalog/product/ao-thun-nam-2.jpg', b'0', NOW(6), NOW(6)),
+                                                                                                          (2, 'https://static.nike.com/a/images/t_PDP_1280_v1/f_auto/air-force-1.jpg', b'1', NOW(6), NOW(6)),
+                                                                                                          (3, 'https://lp2.hm.com/hmgoepprod?set=quality%5B79%5D%2Csource%5B%2Fjeans.jpg%5D', b'1', NOW(6), NOW(6)),
+                                                                                                          (4, 'https://biluxury.vn/media/catalog/product/ao-so-mi-1.jpg', b'1', NOW(6), NOW(6)),
+                                                                                                          (5, 'https://assets.adidas.com/images/h_840,f_auto,q_auto/mu-adidas.jpg', b'1', NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 16. PRODUCT_TAGS (Gắn Tag cho sản phẩm)
+-- Tags đã có: Sale(1), New Arrival(2), Best Seller(3), Summer(5), Casual(7), Formal(8), Sport(10)
+-- -------------------------------------------------------------------------
+INSERT INTO `product_tags` (`product_id`, `tag_id`, `created_at`, `updated_at`) VALUES
+                                                                                    (1, 1, NOW(6), NOW(6)), (1, 5, NOW(6), NOW(6)), (1, 7, NOW(6), NOW(6)), -- Áo thun: Sale, Summer, Casual
+                                                                                    (2, 3, NOW(6), NOW(6)), (2, 10, NOW(6), NOW(6)),                        -- Giày: Best Seller, Sport
+                                                                                    (3, 7, NOW(6), NOW(6)),                                                 -- Quần Jeans: Casual
+                                                                                    (4, 3, NOW(6), NOW(6)), (4, 8, NOW(6), NOW(6)),                         -- Sơ mi: Best Seller, Formal
+                                                                                    (5, 1, NOW(6), NOW(6)), (5, 10, NOW(6), NOW(6));                        -- Mũ: Sale, Sport
+
+-- -------------------------------------------------------------------------
+-- 17. PRODUCT_REVIEWS (Đánh giá sản phẩm)
+-- -------------------------------------------------------------------------
+INSERT INTO `product_reviews` (`product_id`, `user_id`, `rating`, `title`, `comment`, `created_at`, `updated_at`) VALUES
+                                                                                                                      (2, 3, 5, 'Tuyet voi!',     'Giay dep, di rat em chan, giao hang nhanh.', NOW(6), NOW(6)), -- khachhang01 danh gia Nike
+                                                                                                                      (4, 4, 4, 'Chat vai dep',   'Ao dung form, mac rat mat, tuy nhien size hoi om.', NOW(6), NOW(6)), -- khachhang02 danh gia So mi
+                                                                                                                      (1, 5, 5, 'Ngon bo re',     'Gia hop ly, mac hang ngay rat ok.', NOW(6), NOW(6)); -- khachhang03 danh gia Ao thun
+
+-- -------------------------------------------------------------------------
+-- 18. CARTS (Giỏ hàng)
+-- 1 User chỉ có 1 Cart (Unique user_id)
+-- -------------------------------------------------------------------------
+INSERT INTO `carts` (`user_id`, `created_at`, `updated_at`) VALUES
+                                                                (3, NOW(6), NOW(6)), -- Cart cua khachhang01
+                                                                (4, NOW(6), NOW(6)), -- Cart cua khachhang02
+                                                                (7, NOW(6), NOW(6)); -- Cart cua khachhang05
+
+-- -------------------------------------------------------------------------
+-- 19. CART_ITEMS (Sản phẩm trong giỏ)
+-- -------------------------------------------------------------------------
+INSERT INTO `cart_items` (`cart_id`, `product_variant_id`, `quantity`, `created_at`, `updated_at`) VALUES
+                                                                                                       (1, 1, 2, NOW(6), NOW(6)), -- khachhang01 mua 2 Ao thun den
+                                                                                                       (1, 3, 1, NOW(6), NOW(6)), -- khachhang01 mua 1 Giay Nike trang
+                                                                                                       (2, 6, 3, NOW(6), NOW(6)), -- khachhang02 mua 3 So mi
+                                                                                                       (3, 5, 1, NOW(6), NOW(6)); -- khachhang05 mua 1 Quan jeans
+
+-- -------------------------------------------------------------------------
+-- 20. ORDERS (Đơn hàng)
+-- -------------------------------------------------------------------------
+INSERT INTO `orders` (`user_id`, `user_address_id`, `coupon_id`, `first_name`, `last_name`, `phone_number`, `email`, `order_status`, `payment_method`, `is_paid`, `subtotal_original`, `product_discount_amount`, `rank_discount_amount`, `coupon_discount_amount`, `shipping_fee_original`, `shipping_fee_actual`, `tax_amount`, `total_order_amount`, `final_amount`, `notes`, `created_at`, `updated_at`) VALUES
+-- Đơn hàng 1: Của khachhang02 (user 4) - Mua 2 Áo Sơ Mi (2 x 450k = 900k)
+-- Đang giao, Đã thanh toán VN_PAY, Dùng mã giảm 15% (VIP15 - Coupon ID 4)
+(4, 3, 4, 'Le Hoang', 'Tuan', '0912345678', 'tuan.le@gmail.com', 'DELIVERING', 'VN_PAY', b'1',
+ 900000.0000, 0.0000, 45000.0000, 135000.0000, 30000.0000, 0.0000, 0.0000, 930000.0000, 750000.0000, 'Giao gio hanh chinh giup minh', NOW(6), NOW(6)),
+
+-- Đơn hàng 2: Của khachhang05 (user 7) - Mua 1 Giày Nike (2.5tr)
+-- Đã giao thành công, COD, Rank Diamond giảm 20% = 500k
+(7, 6, NULL, 'Vo Thanh', 'Long', '0945678901', 'long.vo@gmail.com', 'DELIVERED', 'COD', b'1',
+ 2500000.0000, 0.0000, 500000.0000, 0.0000, 50000.0000, 50000.0000, 0.0000, 2550000.0000, 2050000.0000, 'Goi hang can than nhe', NOW(6), NOW(6)),
+
+-- Đơn hàng 3: Của Khách vãng lai (Không đăng nhập - Không có user_id) - Mua 1 Áo Thun đen (Variant ID 1 - Gốc 250k giảm còn 200k)
+-- Chờ xác nhận, COD
+(NULL, NULL, NULL, 'Ngo Van', 'Khach', '0988777666', 'khach123@gmail.com', 'PENDING', 'COD', b'0',
+ 250000.0000, 50000.0000, 0.0000, 0.0000, 25000.0000, 25000.0000, 0.0000, 275000.0000, 225000.0000, NULL, NOW(6), NOW(6));
+
+-- -------------------------------------------------------------------------
+-- 21. ORDER_ITEMS (Chi tiết đơn hàng)
+-- -------------------------------------------------------------------------
+INSERT INTO `order_items` (`order_id`, `product_variant_id`, `price`, `quantity`, `created_at`, `updated_at`) VALUES
+-- Chi tiết Đơn 1
+(1, 6, 450000.0000, 2, NOW(6), NOW(6)), -- 2 Áo sơ mi 450k
+-- Chi tiết Đơn 2
+(2, 3, 2500000.0000, 1, NOW(6), NOW(6)), -- 1 Giày Nike 2.5tr
+-- Chi tiết Đơn 3
+(3, 1, 200000.0000, 1, NOW(6), NOW(6)); -- 1 Áo thun (Giá đã giảm là 200k)

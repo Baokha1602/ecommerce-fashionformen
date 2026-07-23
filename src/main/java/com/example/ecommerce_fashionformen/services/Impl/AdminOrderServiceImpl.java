@@ -11,8 +11,10 @@ import com.example.ecommerce_fashionformen.dto.order.OrderStatsResponse;
 import com.example.ecommerce_fashionformen.dto.order.OrderStatusHistoryResponse;
 import com.example.ecommerce_fashionformen.repository.*;
 import com.example.ecommerce_fashionformen.services.AdminOrderService;
+import com.example.ecommerce_fashionformen.services.NotificationService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminOrderServiceImpl implements AdminOrderService {
 
     private final OrderRepository orderRepository;
@@ -37,6 +40,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     private final CouponRepository couponRepository;
     private final UserRepository userRepository;
     private final RankRepository rankRepository;
+    private final NotificationService notificationService;
     private final ModelMapper mapper;
 
     @Value("${app.order.point-per-amount:1000}")
@@ -140,6 +144,17 @@ public class AdminOrderServiceImpl implements AdminOrderService {
                 .note(note)
                 .build();
         orderStatusHistoryRepository.save(statusHistory);
+
+        // Thông báo cho ADMIN/STAFF khi admin/staff hủy đơn (fire-and-forget)
+        if (newStatus == OrderStatus.CANCELLED) {
+            try {
+                notificationService.notifyOrderCancelled(
+                        orderId, adminUsername + " (Quản trị)");
+            } catch (Exception e) {
+                log.warn("[NOTIFICATION] Không thể gửi thông báo admin hủy đơn #{}: {}",
+                        orderId, e.getMessage());
+            }
+        }
 
         return mapper.map(order, OrderResponse.class);
     }

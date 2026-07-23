@@ -4,6 +4,7 @@ import com.example.ecommerce_fashionformen.domain.entity.*;
 import com.example.ecommerce_fashionformen.domain.enums.OrderStatus;
 import com.example.ecommerce_fashionformen.domain.enums.PaymentMethod;
 import com.example.ecommerce_fashionformen.repository.*;
+import com.example.ecommerce_fashionformen.services.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,7 @@ public class OrderAutoExpireSchedulerService {
     private final ProductVariantsRepository productVariantRepository;
     private final CouponRepository couponRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final NotificationService notificationService;
 
     @Value("${app.order.payment-timeout-minutes:15}")
     private int paymentTimeoutMinutes;
@@ -80,6 +82,14 @@ public class OrderAutoExpireSchedulerService {
                 orderStatusHistoryRepository.save(history);
 
                 log.info("Tự động hủy đơn #{} do quá hạn thanh toán online", order.getId());
+
+                // Thông báo cho ADMIN/STAFF về đơn hết hạn (fire-and-forget)
+                try {
+                    notificationService.notifyOrderExpired(order.getId());
+                } catch (Exception ex2) {
+                    log.warn("[NOTIFICATION] Không thể gửi thông báo hết hạn đơn #{}: {}",
+                            order.getId(), ex2.getMessage());
+                }
             } catch (Exception e) {
                 log.error("Lỗi khi tự động hủy đơn #{}: {}", order.getId(), e.getMessage());
             }

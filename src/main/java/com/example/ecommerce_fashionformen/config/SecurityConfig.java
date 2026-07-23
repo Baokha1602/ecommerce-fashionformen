@@ -34,14 +34,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/**", "/api/addresses/**").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/payments/vnpay/**").permitAll()
                         .requestMatchers("/api/payments/momo/**").permitAll()
                         .requestMatchers("/api/promotions/active").permitAll()
-                        .requestMatchers("/api/v1/coupons/available").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .requestMatchers("/api/coupons/available").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -50,7 +49,11 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.List.of("http://localhost:5173", "http://localhost:3000", "http://localhost:5175")); // Vite & standard React ports
+        configuration.setAllowedOrigins(
+                java.util.List.of("http://localhost:5173", "http://localhost:3000", "http://localhost:5175")); // Vite &
+                                                                                                               // standard
+                                                                                                               // React
+                                                                                                               // ports
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Cache-Control", "Accept"));
         configuration.setAllowCredentials(true);

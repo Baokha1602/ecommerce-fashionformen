@@ -11,6 +11,7 @@ import com.example.ecommerce_fashionformen.domain.enums.PaymentMethod;
 import com.example.ecommerce_fashionformen.dto.order.PaymentUrlResponse;
 import com.example.ecommerce_fashionformen.repository.OrderRepository;
 import com.example.ecommerce_fashionformen.repository.OrderStatusHistoryRepository;
+import com.example.ecommerce_fashionformen.services.NotificationService;
 import com.example.ecommerce_fashionformen.services.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final VnPayProperties vnPayProperties;
     private final MoMoProperties moMoProperties;
+    private final NotificationService notificationService;
 
     private static final DateTimeFormatter VN_PAY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
@@ -275,6 +277,14 @@ public class PaymentServiceImpl implements PaymentService {
         orderStatusHistoryRepository.save(history);
 
         log.info("Đơn #{} thanh toán thành công qua {}", orderId, source);
+
+        // Thông báo cho ADMIN/STAFF về thanh toán online thành công (fire-and-forget)
+        try {
+            notificationService.notifyOrderPaymentSuccess(orderId, source);
+        } catch (Exception e) {
+            log.warn("[NOTIFICATION] Không thể gửi thông báo thanh toán đơn #{}: {}",
+                    orderId, e.getMessage());
+        }
     }
 
     private String extractOrderIdFromMoMo(String momoOrderId) {

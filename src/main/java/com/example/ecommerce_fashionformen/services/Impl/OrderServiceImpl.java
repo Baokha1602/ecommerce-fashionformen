@@ -10,8 +10,10 @@ import com.example.ecommerce_fashionformen.dto.promotion.DiscountResult;
 import com.example.ecommerce_fashionformen.repository.*;
 import com.example.ecommerce_fashionformen.services.CartService;
 import com.example.ecommerce_fashionformen.services.DiscountCalculationService;
+import com.example.ecommerce_fashionformen.services.NotificationService;
 import com.example.ecommerce_fashionformen.services.OrderService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
@@ -38,6 +41,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final CouponUsageHistoryRepository couponUsageHistoryRepository;
     private final DiscountCalculationService discountCalculationService;
+    private final NotificationService notificationService;
     private final ModelMapper mapper;
 
     @Value("${app.order.shipping-fee:30000}")
@@ -212,6 +216,15 @@ public class OrderServiceImpl implements OrderService {
         cart.setAppliedCouponCode(null);
         cartRepository.save(cart);
 
+        // 9. Thông báo cho ADMIN/STAFF về đơn hàng mới (fire-and-forget)
+        final Long savedOrderId = order.getId();
+        final String customerName = user.getFullName();
+        try {
+            notificationService.notifyOrderPlaced(savedOrderId, customerName);
+        } catch (Exception e) {
+            log.warn("[NOTIFICATION] Không thể gửi thông báo đơn mới #{}: {}", savedOrderId, e.getMessage());
+        }
+
         return mapper.map(order, OrderResponse.class);
     }
 
@@ -286,6 +299,15 @@ public class OrderServiceImpl implements OrderService {
                 .note("Khách hàng tự hủy đơn")
                 .build();
         orderStatusHistoryRepository.save(statusHistory);
+
+        // Thông báo cho ADMIN/STAFF về đơn bị hủy bởi khách (fire-and-forget)
+        final String cancelledByName = user != null
+                ? user.getFullName() + " (Khách hàng)" : "Khách hàng";
+        try {
+            notificationService.notifyOrderCancelled(orderId, cancelledByName);
+        } catch (Exception e) {
+            log.warn("[NOTIFICATION] Không thể gửi thông báo hủy đơn #{}: {}", orderId, e.getMessage());
+        }
 
         return mapper.map(order, OrderResponse.class);
     }

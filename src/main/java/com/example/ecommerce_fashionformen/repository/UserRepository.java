@@ -28,4 +28,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByIsActive(Boolean isActive, Pageable pageable);
     List<User> findByUserRole(UserRole userRole);
 
+    // 4. Lấy danh sách user theo nhiều role — dùng cho Notification System
+    List<User> findByUserRoleIn(List<UserRole> roles);
+
 }

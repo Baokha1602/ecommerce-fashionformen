@@ -53,7 +53,7 @@ public class OtpServiceImpl implements OtpService {
         otpRepository.save(otp);
 
         // 4. Gửi email chứa OTP cho người dùng
-        String subject = "[Fashion For Man] Mã OTP khôi phục mật khẩu";
+        String subject = "[Fashion For Men] Mã OTP khôi phục mật khẩu";
         String htmlBody = "<html><body>" +
                 "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;'>" +
                 "<h2 style='color: #333333; text-align: center;'>Yêu Cầu Đặt Lại Mật Khẩu</h2>" +

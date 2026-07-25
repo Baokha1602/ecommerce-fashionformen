@@ -33,7 +33,7 @@ public class GhnServiceImpl implements GhnService {
     private static final int ITEM_WIDTH_CM     = 25;    // cm
 
     /** Phí vận chuyển mặc định dùng khi GHN không phản hồi (fallback) */
-    private static final BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("30000");
+    private static final BigDecimal DEFAULT_SHIPPING_FEE = new BigDecimal("0");
 
     /** service_type_id = 2 → Giao hàng chuẩn */
     private static final int SERVICE_TYPE_STANDARD = 2;

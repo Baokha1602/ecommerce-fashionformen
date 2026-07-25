@@ -37,7 +37,7 @@ public class CartServiceImpl implements CartService {
     private final DiscountCalculationService discountCalculationService;
     private final ModelMapper mapper;
 
-    @Value("${app.order.shipping-fee:30000}")
+    @Value("${app.order.shipping-fee:0}")
     private BigDecimal shippingFee;
 
     private Cart getOrCreateCart(Long userId) {

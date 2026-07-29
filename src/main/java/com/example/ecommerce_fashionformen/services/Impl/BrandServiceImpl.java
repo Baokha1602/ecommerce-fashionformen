@@ -28,7 +28,7 @@ public class BrandServiceImpl implements BrandService {
     @Override
     @Transactional(readOnly = true)
     public List<BrandResponse> findAll() {
-        return brandRepository.findAll().stream()
+        return brandRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -36,7 +36,7 @@ public class BrandServiceImpl implements BrandService {
     @Override
     @Transactional(readOnly = true)
     public List<BrandResponse> findAllActive() {
-        return brandRepository.findByIsActive(true).stream()
+        return brandRepository.findByIsActiveAndIsDeletedFalse(true).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -44,7 +44,7 @@ public class BrandServiceImpl implements BrandService {
     @Override
     @Transactional(readOnly = true)
     public BrandResponse findById(Long id) {
-        Brand brand = brandRepository.findById(id)
+        Brand brand = brandRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thương hiệu với ID: " + id));
         return mapToResponse(brand);
     }
@@ -66,7 +66,7 @@ public class BrandServiceImpl implements BrandService {
     @Override
     @Transactional
     public BrandResponse update(Long id, BrandUpsertRequest request) {
-        Brand brand = brandRepository.findById(id)
+        Brand brand = brandRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thương hiệu với ID: " + id));
 
         // Kiểm tra trùng tên với brand khác
@@ -87,8 +87,9 @@ public class BrandServiceImpl implements BrandService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Brand brand = brandRepository.findById(id)
+        Brand brand = brandRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thương hiệu với ID: " + id));
-        brandRepository.delete(brand);
+        brand.softDelete();
+        brandRepository.save(brand);
     }
 }

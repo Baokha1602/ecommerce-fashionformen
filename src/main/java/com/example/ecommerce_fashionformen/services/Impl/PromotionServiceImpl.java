@@ -65,7 +65,7 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional
     public PromotionResponse updatePromotion(Long id, PromotionCreateRequest request) {
-        Promotion promotion = promotionRepository.findById(id)
+        Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Khuyến mãi không tồn tại"));
 
         promotion.setName(request.getName());
@@ -89,18 +89,20 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional
     public void deletePromotion(Long id) {
-        Promotion promotion = promotionRepository.findById(id)
+        Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Khuyến mãi không tồn tại"));
 
         // Reset giá variant trước khi xóa
         resetVariantDiscountsForPromotion(id);
         promotionProductRepository.deleteByPromotionId(id);
-        promotionRepository.delete(promotion);
+        // Soft delete thay vì hard delete
+        promotion.softDelete();
+        promotionRepository.save(promotion);
     }
 
     @Override
     public PromotionResponse getPromotion(Long id) {
-        Promotion promotion = promotionRepository.findById(id)
+        Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Khuyến mãi không tồn tại"));
         PromotionResponse response = mapper.map(promotion, PromotionResponse.class);
         List<PromotionProduct> products = promotionProductRepository.findByPromotionId(id);
@@ -112,7 +114,7 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Override
     public List<PromotionResponse> getAllPromotions() {
-        return promotionRepository.findAll().stream()
+        return promotionRepository.findAllByIsDeletedFalse().stream()
                 .map(p -> {
                     PromotionResponse resp = mapper.map(p, PromotionResponse.class);
                     List<PromotionProduct> products = promotionProductRepository.findByPromotionId(p.getId());
@@ -142,7 +144,7 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional
     public PromotionResponse addPromotionProducts(Long promotionId, List<PromotionProductRequest> products) {
-        Promotion promotion = promotionRepository.findById(promotionId)
+        Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(promotionId)
                 .orElseThrow(() -> new NotFoundException("Khuyến mãi không tồn tại"));
 
         List<PromotionProduct> newProducts = products.stream().map(p -> {
@@ -167,7 +169,7 @@ public class PromotionServiceImpl implements PromotionService {
     @Override
     @Transactional
     public PromotionResponse removePromotionProducts(Long promotionId, List<Long> variantIds) {
-        Promotion promotion = promotionRepository.findById(promotionId)
+        Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(promotionId)
                 .orElseThrow(() -> new NotFoundException("Khuyến mãi không tồn tại"));
 
         // Reset giá trước khi xóa

@@ -27,7 +27,7 @@ public class BannerServiceImpl implements BannerService {
     @Override
     @Transactional(readOnly = true)
     public List<BannerResponse> findAll() {
-        return bannerRepository.findAll().stream()
+        return bannerRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -35,7 +35,7 @@ public class BannerServiceImpl implements BannerService {
     @Override
     @Transactional(readOnly = true)
     public List<BannerResponse> findAllActive() {
-        return bannerRepository.findByIsActiveOrderByDisplayOrderAsc(true).stream()
+        return bannerRepository.findByIsActiveAndIsDeletedFalseOrderByDisplayOrderAsc(true).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -43,7 +43,7 @@ public class BannerServiceImpl implements BannerService {
     @Override
     @Transactional(readOnly = true)
     public BannerResponse findById(Long id) {
-        Banner banner = bannerRepository.findById(id)
+        Banner banner = bannerRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy banner với ID: " + id));
         return mapToResponse(banner);
     }
@@ -61,7 +61,7 @@ public class BannerServiceImpl implements BannerService {
     @Override
     @Transactional
     public BannerResponse update(Long id, BannerUpsertRequest request) {
-        Banner banner = bannerRepository.findById(id)
+        Banner banner = bannerRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy banner với ID: " + id));
 
         banner.setTitle(request.getTitle());
@@ -78,8 +78,9 @@ public class BannerServiceImpl implements BannerService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Banner banner = bannerRepository.findById(id)
+        Banner banner = bannerRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy banner với ID: " + id));
-        bannerRepository.delete(banner);
+        banner.softDelete();
+        bannerRepository.save(banner);
     }
 }

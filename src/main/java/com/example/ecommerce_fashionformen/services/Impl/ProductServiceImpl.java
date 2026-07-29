@@ -47,7 +47,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
-        Product entity = productRepository.findById(id)
+        Product entity = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
         return mapToResponse(entity);
     }
@@ -55,7 +55,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll().stream()
+        return productRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -63,7 +63,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse updateProduct(Long id, ProductRequest request) {
-        Product entity = productRepository.findById(id)
+        Product entity = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
         entity.setName(request.getName());
         entity.setDescription(request.getDescription());
@@ -85,9 +85,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void deleteProduct(Long id) {
-        Product entity = productRepository.findById(id)
+        Product entity = productRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
-        productRepository.delete(entity);
+        entity.softDelete();
+        productRepository.save(entity);
     }
 
     private ProductResponse mapToResponse(Product entity) {

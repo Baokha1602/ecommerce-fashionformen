@@ -35,7 +35,7 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional(readOnly = true)
     public List<CouponResponse> findAll() {
-        return couponRepository.findAll().stream()
+        return couponRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -43,7 +43,7 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional(readOnly = true)
     public CouponResponse findById(Long id) {
-        Coupon coupon = couponRepository.findById(id)
+        Coupon coupon = couponRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá với ID: " + id));
         return mapToResponse(coupon);
     }
@@ -51,7 +51,7 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional(readOnly = true)
     public CouponResponse findByCode(String code) {
-        Coupon coupon = couponRepository.findByCode(code)
+        Coupon coupon = couponRepository.findByCodeAndIsDeletedFalse(code)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá: " + code));
         return mapToResponse(coupon);
     }
@@ -78,7 +78,7 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional
     public CouponResponse update(Long id, CouponUpdateRequest request) {
-        Coupon coupon = couponRepository.findById(id)
+        Coupon coupon = couponRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá với ID: " + id));
 
         // Cập nhật các trường non-null (PATCH semantics)
@@ -118,9 +118,10 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Coupon coupon = couponRepository.findById(id)
+        Coupon coupon = couponRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá với ID: " + id));
-        couponRepository.delete(coupon);
+        coupon.softDelete();
+        couponRepository.save(coupon);
     }
 
     @Override
@@ -135,8 +136,8 @@ public class CouponServiceImpl implements CouponService {
     @Override
     @Transactional(readOnly = true)
     public List<CouponUsageHistoryResponse> getCouponUsageHistory(Long couponId) {
-        // Verify coupon exists
-        couponRepository.findById(couponId)
+        // Verify coupon exists and not deleted
+        couponRepository.findByIdAndIsDeletedFalse(couponId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy mã giảm giá với ID: " + couponId));
 
         return couponUsageHistoryRepository.findByCouponId(couponId).stream()

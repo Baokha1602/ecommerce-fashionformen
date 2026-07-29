@@ -37,7 +37,8 @@ public class UserAddressServiceImpl implements UserAddressService {
     public List<UserAddressResponse> findByUserId(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng với ID: " + userId));
-        return userAddressRepository.findByUser(user).stream()
+        // Chỉ trả về địa chỉ chưa bị xóa mềm
+        return userAddressRepository.findByUserAndIsDeletedFalse(user).stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -45,7 +46,7 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     @Transactional(readOnly = true)
     public UserAddressResponse findById(Long id) {
-        UserAddress address = userAddressRepository.findById(id)
+        UserAddress address = userAddressRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy địa chỉ với ID: " + id));
         return mapToResponse(address);
     }
@@ -70,7 +71,7 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     @Transactional
     public UserAddressResponse update(Long id, UserAddressUpdateRequest request) {
-        UserAddress address = userAddressRepository.findById(id)
+        UserAddress address = userAddressRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy địa chỉ với ID: " + id));
 
         if (request.getAddress() != null) {
@@ -110,9 +111,10 @@ public class UserAddressServiceImpl implements UserAddressService {
     @Override
     @Transactional
     public void delete(Long id) {
-        UserAddress address = userAddressRepository.findById(id)
+        UserAddress address = userAddressRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy địa chỉ với ID: " + id));
-        userAddressRepository.delete(address);
+        address.softDelete();
+        userAddressRepository.save(address);
     }
 
     /**

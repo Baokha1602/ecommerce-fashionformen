@@ -48,7 +48,7 @@ public class ProductReviewsServiceImpl implements ProductReviewsService {
     @Override
     @Transactional(readOnly = true)
     public ProductReviewsResponse getProductReviewsById(Long id) {
-        ProductReviews entity = productReviewsRepository.findById(id)
+        ProductReviews entity = productReviewsRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("ProductReviews not found with id: " + id));
         return mapToResponse(entity);
     }
@@ -56,7 +56,7 @@ public class ProductReviewsServiceImpl implements ProductReviewsService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductReviewsResponse> getAllProductReviewss() {
-        return productReviewsRepository.findAll().stream()
+        return productReviewsRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -64,7 +64,7 @@ public class ProductReviewsServiceImpl implements ProductReviewsService {
     @Override
     @Transactional
     public ProductReviewsResponse updateProductReviews(Long id, ProductReviewsRequest request) {
-        ProductReviews entity = productReviewsRepository.findById(id)
+        ProductReviews entity = productReviewsRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("ProductReviews not found with id: " + id));
         entity.setRating(request.getRating());
         entity.setTitle(request.getTitle());
@@ -87,9 +87,10 @@ public class ProductReviewsServiceImpl implements ProductReviewsService {
     @Override
     @Transactional
     public void deleteProductReviews(Long id) {
-        ProductReviews entity = productReviewsRepository.findById(id)
+        ProductReviews entity = productReviewsRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("ProductReviews not found with id: " + id));
-        productReviewsRepository.delete(entity);
+        entity.softDelete();
+        productReviewsRepository.save(entity);
     }
 
     private ProductReviewsResponse mapToResponse(ProductReviews entity) {

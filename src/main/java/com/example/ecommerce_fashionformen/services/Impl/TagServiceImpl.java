@@ -29,7 +29,7 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional(readOnly = true)
     public List<TagResponse> findAll() {
-        return tagRepository.findAll().stream()
+        return tagRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -37,7 +37,7 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional(readOnly = true)
     public TagResponse findById(Long id) {
-        Tag tag = tagRepository.findById(id)
+        Tag tag = tagRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thẻ tag với ID: " + id));
         return mapToResponse(tag);
     }
@@ -56,7 +56,7 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional
     public TagResponse update(Long id, TagUpdateRequest request) {
-        Tag tag = tagRepository.findById(id)
+        Tag tag = tagRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thẻ tag với ID: " + id));
 
         // Kiểm tra trùng tên với tag khác
@@ -77,8 +77,9 @@ public class TagServiceImpl implements TagService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Tag tag = tagRepository.findById(id)
+        Tag tag = tagRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy thẻ tag với ID: " + id));
-        tagRepository.delete(tag);
+        tag.softDelete();
+        tagRepository.save(tag);
     }
 }

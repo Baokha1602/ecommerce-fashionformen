@@ -29,7 +29,7 @@ public class RankServiceImpl implements RankService {
     @Override
     @Transactional(readOnly = true)
     public List<RankResponse> findAll() {
-        return rankRepository.findAll().stream()
+        return rankRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -37,7 +37,7 @@ public class RankServiceImpl implements RankService {
     @Override
     @Transactional(readOnly = true)
     public RankResponse findById(Long id) {
-        Rank rank = rankRepository.findById(id)
+        Rank rank = rankRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hạng với ID: " + id));
         return mapToResponse(rank);
     }
@@ -52,7 +52,7 @@ public class RankServiceImpl implements RankService {
     @Override
     @Transactional
     public RankResponse update(Long id, RankUpsertRequest request) {
-        Rank rank = rankRepository.findById(id)
+        Rank rank = rankRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hạng với ID: " + id));
 
         rank.setRankName(request.getRankName());
@@ -65,7 +65,7 @@ public class RankServiceImpl implements RankService {
     @Override
     @Transactional
     public RankResponse patch(Long id, RankUpsertRequest request) {
-        Rank rank = rankRepository.findById(id)
+        Rank rank = rankRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hạng với ID: " + id));
 
         if (request.getRankName() != null) {
@@ -90,8 +90,9 @@ public class RankServiceImpl implements RankService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Rank rank = rankRepository.findById(id)
+        Rank rank = rankRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy hạng với ID: " + id));
-        rankRepository.delete(rank);
+        rank.softDelete();
+        rankRepository.save(rank);
     }
 }

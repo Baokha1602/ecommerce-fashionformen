@@ -28,7 +28,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<CategoryResponse> findAll() {
-        return categoryRepository.findAll().stream()
+        return categoryRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -36,7 +36,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public CategoryResponse findById(Long id) {
-        Category category = categoryRepository.findById(id)
+        Category category = categoryRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục với ID: " + id));
         return mapToResponse(category);
     }
@@ -57,7 +57,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryResponse update(Long id, CategoryUpsertRequest request) {
-        Category category = categoryRepository.findById(id)
+        Category category = categoryRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục với ID: " + id));
 
         // Kiểm tra trùng tên với category khác
@@ -73,8 +73,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public void delete(Long id) {
-        Category category = categoryRepository.findById(id)
+        Category category = categoryRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy danh mục với ID: " + id));
-        categoryRepository.delete(category);
+        category.softDelete();
+        categoryRepository.save(category);
     }
 }

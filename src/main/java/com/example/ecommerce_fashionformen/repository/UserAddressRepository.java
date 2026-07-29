@@ -12,4 +12,8 @@ import java.util.Optional;
 public interface UserAddressRepository extends JpaRepository<UserAddress, Long> {
     List<UserAddress> findByUser(User user);
     Optional<UserAddress> findByUserAndIsDefaultTrue(User user);
+
+    // Soft-delete aware queries
+    Optional<UserAddress> findByIdAndIsDeletedFalse(Long id);
+    List<UserAddress> findByUserAndIsDeletedFalse(User user);
 }

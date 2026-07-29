@@ -58,7 +58,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductVariantResponse> findAll() {
-        return productVariantsRepository.findAll().stream()
+        return productVariantsRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -66,7 +66,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Override
     @Transactional(readOnly = true)
     public ProductVariantResponse findById(Long id) {
-        ProductVariant entity = productVariantsRepository.findById(id)
+        ProductVariant entity = productVariantsRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy biến thể sản phẩm với ID: " + id));
         return mapToResponse(entity);
     }
@@ -95,7 +95,7 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Override
     @Transactional
     public ProductVariantResponse update(Long id, ProductVariantRequest request) {
-        ProductVariant entity = productVariantsRepository.findById(id)
+        ProductVariant entity = productVariantsRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy biến thể sản phẩm với ID: " + id));
         if (request.getProductId() != null) {
             entity.setProduct(productRepository.findById(request.getProductId())
@@ -119,8 +119,9 @@ public class ProductVariantServiceImpl implements ProductVariantService {
     @Override
     @Transactional
     public void delete(Long id) {
-        ProductVariant entity = productVariantsRepository.findById(id)
+        ProductVariant entity = productVariantsRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy biến thể sản phẩm với ID: " + id));
-        productVariantsRepository.delete(entity);
+        entity.softDelete();
+        productVariantsRepository.save(entity);
     }
 }

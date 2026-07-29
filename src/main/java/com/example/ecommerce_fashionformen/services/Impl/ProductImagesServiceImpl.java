@@ -39,7 +39,7 @@ public class ProductImagesServiceImpl implements ProductImagesService {
     @Override
     @Transactional(readOnly = true)
     public ProductImagesResponse getProductImagesById(Long id) {
-        ProductImages entity = productImagesRepository.findById(id)
+        ProductImages entity = productImagesRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("ProductImages not found with id: " + id));
         return mapToResponse(entity);
     }
@@ -47,7 +47,7 @@ public class ProductImagesServiceImpl implements ProductImagesService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductImagesResponse> getAllProductImagess() {
-        return productImagesRepository.findAll().stream()
+        return productImagesRepository.findAllByIsDeletedFalse().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -55,7 +55,7 @@ public class ProductImagesServiceImpl implements ProductImagesService {
     @Override
     @Transactional
     public ProductImagesResponse updateProductImages(Long id, ProductImagesRequest request) {
-        ProductImages entity = productImagesRepository.findById(id)
+        ProductImages entity = productImagesRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("ProductImages not found with id: " + id));
         entity.setImage(request.getImage());
         entity.setMainImage(request.isMainImage());
@@ -71,9 +71,10 @@ public class ProductImagesServiceImpl implements ProductImagesService {
     @Override
     @Transactional
     public void deleteProductImages(Long id) {
-        ProductImages entity = productImagesRepository.findById(id)
+        ProductImages entity = productImagesRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("ProductImages not found with id: " + id));
-        productImagesRepository.delete(entity);
+        entity.softDelete();
+        productImagesRepository.save(entity);
     }
 
     private ProductImagesResponse mapToResponse(ProductImages entity) {

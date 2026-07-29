@@ -5,13 +5,14 @@ import com.example.ecommerce_fashionformen.domain.enums.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     // 1. Tìm kiếm phục vụ Đăng nhập & Xác thực
     Optional<User> findByUsername(String username);
@@ -30,5 +31,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 4. Lấy danh sách user theo nhiều role — dùng cho Notification System
     List<User> findByUserRoleIn(List<UserRole> roles);
+
+    // 5. Soft-delete aware queries
+    Optional<User> findByIdAndIsDeletedFalse(Long id);
 
 }

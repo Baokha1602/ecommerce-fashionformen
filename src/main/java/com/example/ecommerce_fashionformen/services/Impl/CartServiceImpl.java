@@ -14,8 +14,10 @@ import com.example.ecommerce_fashionformen.repository.CartItemRepository;
 import com.example.ecommerce_fashionformen.repository.CartRepository;
 import com.example.ecommerce_fashionformen.repository.ProductVariantsRepository;
 import com.example.ecommerce_fashionformen.repository.UserRepository;
+import com.example.ecommerce_fashionformen.repository.UserAddressRepository;
 import com.example.ecommerce_fashionformen.services.CartService;
 import com.example.ecommerce_fashionformen.services.DiscountCalculationService;
+import com.example.ecommerce_fashionformen.services.GhnService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,10 +37,12 @@ public class CartServiceImpl implements CartService {
     private final UserRepository userRepository;
     private final ProductVariantsRepository productVariantRepository;
     private final DiscountCalculationService discountCalculationService;
+    private final UserAddressRepository userAddressRepository;
+    private final GhnService ghnService;
     private final ModelMapper mapper;
 
     @Value("${app.order.shipping-fee:30000}")
-    private BigDecimal shippingFee;
+    private BigDecimal defaultShippingFee;
 
     private Cart getOrCreateCart(Long userId) {
         User user = userRepository.findById(userId)
@@ -206,6 +210,31 @@ public class CartServiceImpl implements CartService {
             }
 
             itemResponses.add(itemResp);
+        }
+        
+        int totalQuantity = items.stream().mapToInt(CartItem::getQuantity).sum();
+        BigDecimal shippingFee = BigDecimal.ZERO;
+        if (totalQuantity > 0) {
+            shippingFee = defaultShippingFee;
+            List<com.example.ecommerce_fashionformen.domain.entity.UserAddress> addresses = userAddressRepository.findByUser(user);
+            com.example.ecommerce_fashionformen.domain.entity.UserAddress addressToUse = null;
+            for (com.example.ecommerce_fashionformen.domain.entity.UserAddress addr : addresses) {
+                if (Boolean.TRUE.equals(addr.getIsDefault())) {
+                    addressToUse = addr;
+                    break;
+                }
+            }
+            if (addressToUse == null && !addresses.isEmpty()) {
+                addressToUse = addresses.get(0);
+            }
+            
+            if (addressToUse != null) {
+                try {
+                    shippingFee = ghnService.calculateShippingFee(totalQuantity, addressToUse.getDistrictId().intValue(), addressToUse.getWardId());
+                } catch (Exception e) {
+                    // Ignore, fallback to default
+                }
+            }
         }
 
         response.setCartItems(itemResponses);

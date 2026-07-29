@@ -10,6 +10,7 @@ import com.example.ecommerce_fashionformen.dto.promotion.DiscountResult;
 import com.example.ecommerce_fashionformen.repository.*;
 import com.example.ecommerce_fashionformen.services.CartService;
 import com.example.ecommerce_fashionformen.services.DiscountCalculationService;
+import com.example.ecommerce_fashionformen.services.GhnService;
 import com.example.ecommerce_fashionformen.services.NotificationService;
 import com.example.ecommerce_fashionformen.services.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -40,12 +41,14 @@ public class OrderServiceImpl implements OrderService {
     private final CartItemRepository cartItemRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final CouponUsageHistoryRepository couponUsageHistoryRepository;
+    private final UserAddressRepository userAddressRepository;
     private final DiscountCalculationService discountCalculationService;
+    private final GhnService ghnService;
     private final NotificationService notificationService;
     private final ModelMapper mapper;
 
     @Value("${app.order.shipping-fee:30000}")
-    private BigDecimal shippingFee;
+    private BigDecimal defaultShippingFee;
 
     /**
      * Tạo đơn hàng theo transaction chặt chẽ:
@@ -137,16 +140,30 @@ public class OrderServiceImpl implements OrderService {
         order.setCouponId(discountResult.getAppliedCouponId());
         order.setCouponCode(couponCode);
 
-        order.setShippingFeeOriginal(shippingFee);
-        order.setShippingFeeActual(shippingFee);
+        // Calculate dynamic shipping fee
+        UserAddress userAddress = userAddressRepository.findById(request.getUserAddressId())
+                .orElseThrow(() -> new NotFoundException("Địa chỉ không tồn tại"));
+        
+        int totalQuantity = validItems.stream().mapToInt(CartItem::getQuantity).sum();
+        BigDecimal actualShippingFee = BigDecimal.ZERO;
+        if (totalQuantity > 0) {
+            try {
+                actualShippingFee = ghnService.calculateShippingFee(totalQuantity, userAddress.getDistrictId().intValue(), userAddress.getWardId());
+            } catch (Exception e) {
+                actualShippingFee = defaultShippingFee;
+            }
+        }
 
-        BigDecimal totalOrderAmount = subtotal.add(shippingFee);
+        order.setShippingFeeOriginal(actualShippingFee);
+        order.setShippingFeeActual(actualShippingFee);
+
+        BigDecimal totalOrderAmount = subtotal.add(actualShippingFee);
         order.setTotalOrderAmount(totalOrderAmount);
 
         BigDecimal finalAmount = subtotalAfterProductDiscount
                 .subtract(discountResult.getCouponDiscount())
                 .subtract(discountResult.getRankDiscount())
-                .add(shippingFee);
+                .add(actualShippingFee);
         if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {
             finalAmount = BigDecimal.ZERO;
         }

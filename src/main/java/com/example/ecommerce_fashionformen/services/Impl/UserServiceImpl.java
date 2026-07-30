@@ -1,9 +1,11 @@
 package com.example.ecommerce_fashionformen.services.Impl;
 
+import com.example.ecommerce_fashionformen.controllers.common.exception.BadRequestException;
 import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.User;
 import com.example.ecommerce_fashionformen.domain.enums.UserRole;
 import com.example.ecommerce_fashionformen.dto.user.UserResponse;
+import com.example.ecommerce_fashionformen.dto.user.UserUpdateRequest;
 import com.example.ecommerce_fashionformen.repository.UserRepository;
 import com.example.ecommerce_fashionformen.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +25,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
-    // ─── Mapping ────────────────────────────────────────────────────────────────
-
+    // Chuyen doi User sang UserResponse
     private UserResponse mapToResponse(User user) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
@@ -32,7 +33,7 @@ public class UserServiceImpl implements UserService {
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
         response.setFullName(user.getFullName());
-        response.setAvatarUrl(user.getAvatarUrl());
+        response.setAvatarImage(user.getAvatarImage());
         response.setCurrentPoint(user.getCurrentPoint());
         response.setUserRole(user.getUserRole());
         response.setIsActive(user.getIsActive());
@@ -91,6 +92,47 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng với ID: " + id));
         return mapToResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateUser(Long id, UserUpdateRequest request) {
+        User user = userRepository.findByIdAndIsDeletedFalse(id)
+                .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng với ID: " + id));
+
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName().trim());
+        }
+
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String newEmail = request.getEmail().trim();
+            if (user.getEmail() == null || !user.getEmail().equalsIgnoreCase(newEmail)) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new BadRequestException("Email " + newEmail + " đã được sử dụng bởi tài khoản khác");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            String newPhone = request.getPhone().trim();
+            if (user.getPhone() == null || !user.getPhone().equals(newPhone)) {
+                if (userRepository.existsByPhone(newPhone)) {
+                    throw new BadRequestException("Số điện thoại " + newPhone + " đã được sử dụng bởi tài khoản khác");
+                }
+                user.setPhone(newPhone);
+            }
+        }
+
+        if (request.getAvatarImage() != null) {
+            user.setAvatarImage(request.getAvatarImage().trim());
+        }
+
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(request.getDateOfBirth());
+        }
+
+        return mapToResponse(userRepository.save(user));
     }
 
     @Override

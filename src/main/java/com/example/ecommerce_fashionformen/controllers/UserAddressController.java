@@ -20,6 +20,11 @@ public class UserAddressController {
 
     private final UserAddressService userAddressService;
 
+    @GetMapping
+    public ApiResponse<List<UserAddressResponse>> getAll() {
+        return ApiResponse.success("Lấy danh sách tất cả địa chỉ thành công", userAddressService.findAll());
+    }
+
     @GetMapping("/user/{userId}")
     public ApiResponse<List<UserAddressResponse>> getByUserId(@PathVariable Long userId) {
         return ApiResponse.success("Lấy danh sách địa chỉ thành công", userAddressService.findByUserId(userId));

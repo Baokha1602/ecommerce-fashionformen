@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface UserAddressService {
 
+    List<UserAddressResponse> findAll();
+
     List<UserAddressResponse> findByUserId(Long userId);
 
     UserAddressResponse findById(Long id);

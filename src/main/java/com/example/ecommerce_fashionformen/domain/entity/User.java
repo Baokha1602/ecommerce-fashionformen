@@ -33,8 +33,10 @@ public class User extends AuditableEntity {
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
+   
+    @Lob
+    @Column(name = "avatar_image", columnDefinition = "LONGTEXT")
+    private String avatarImage;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rank_id")

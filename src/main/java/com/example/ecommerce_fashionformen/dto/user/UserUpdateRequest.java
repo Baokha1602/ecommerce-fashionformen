@@ -24,8 +24,8 @@ public class UserUpdateRequest {
     @Pattern(regexp = "^(0[3|5|7|8|9])+([0-9]{8})$", message = "Số điện thoại không hợp lệ")
     private String phone;
 
-    @Size(max = 500, message = "Đường dẫn avatar quá dài")
-    private String avatarUrl;
+   
+    private String avatarImage;
 
    @MinAge(value = 13, message = "Bạn phải từ 13 tuổi trở lên mới được mua hàng")
     private LocalDate dateOfBirth;

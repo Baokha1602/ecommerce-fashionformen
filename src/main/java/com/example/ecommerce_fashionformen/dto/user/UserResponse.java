@@ -16,7 +16,8 @@ public class UserResponse {
     private String email;
     private String phone;
     private String fullName;
-    private String avatarUrl;
+    // Ảnh đại diện dạng Base64
+    private String avatarImage;
     private int currentPoint;
     private UserRole userRole;
     private Boolean isActive;

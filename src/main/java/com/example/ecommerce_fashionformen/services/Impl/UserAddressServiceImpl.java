@@ -34,6 +34,14 @@ public class UserAddressServiceImpl implements UserAddressService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<UserAddressResponse> findAll() {
+        return userAddressRepository.findByIsDeletedFalse().stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<UserAddressResponse> findByUserId(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Không tìm thấy người dùng với ID: " + userId));

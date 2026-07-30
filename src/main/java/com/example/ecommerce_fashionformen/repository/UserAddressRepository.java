@@ -16,4 +16,5 @@ public interface UserAddressRepository extends JpaRepository<UserAddress, Long> 
     // Soft-delete aware queries
     Optional<UserAddress> findByIdAndIsDeletedFalse(Long id);
     List<UserAddress> findByUserAndIsDeletedFalse(User user);
+    List<UserAddress> findByIsDeletedFalse();
 }

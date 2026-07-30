@@ -169,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
         response.setFullName(user.getFullName());
-        response.setAvatarUrl(user.getAvatarUrl());
+        response.setAvatarImage(user.getAvatarImage());
         response.setCurrentPoint(user.getCurrentPoint());
         response.setUserRole(user.getUserRole());
         response.setIsActive(user.getIsActive());

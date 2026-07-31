@@ -1,9 +1,11 @@
 spring:
+  flyway:
+    clean-on-validation-error: true
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${YOEDU_DB_URL:jdbc:mysql://localhost:3306/fashionformen?createDatabaseIfNotExist=true}
     username: ${YOEDU_DB_USERNAME:root}
-    password: ${YOEDU_DB_PASSWORD:}
+    password: ${YOEDU_DB_PASSWORD:123456}
 
   jpa:
     properties:

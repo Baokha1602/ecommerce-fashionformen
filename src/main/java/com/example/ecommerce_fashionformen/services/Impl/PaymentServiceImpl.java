@@ -16,8 +16,14 @@ import com.example.ecommerce_fashionformen.services.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -38,7 +44,20 @@ public class PaymentServiceImpl implements PaymentService {
     private final MoMoProperties moMoProperties;
     private final NotificationService notificationService;
 
+    /** MoMo yêu cầu timeout tối thiểu 30s khi gọi API create payment */
+    private final RestTemplate restTemplate = buildRestTemplate();
+
+    private static final long MOMO_MIN_AMOUNT = 1_000L;
+    private static final long MOMO_MAX_AMOUNT = 50_000_000L;
+
     private static final DateTimeFormatter VN_PAY_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+    private RestTemplate buildRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(30_000); // 30 giây
+        factory.setReadTimeout(30_000);    // 30 giây
+        return new RestTemplate(factory);
+    }
 
     @Override
     public PaymentUrlResponse createVnPayUrl(Long orderId, Long userId, HttpServletRequest request) {
@@ -89,37 +108,86 @@ public class PaymentServiceImpl implements PaymentService {
         Order order = getOrderForPayment(orderId, userId, PaymentMethod.MOMO);
 
         long amount = order.getFinalAmount().longValue();
+
+        // Validate amount theo giới hạn MoMo: 1.000 - 50.000.000 VND
+        if (amount < MOMO_MIN_AMOUNT || amount > MOMO_MAX_AMOUNT) {
+            throw new BadRequestException(
+                    "Số tiền thanh toán MoMo phải từ 1.000 đến 50.000.000 VND (hiện tại: " + amount + " VND)");
+        }
+
         String requestId = UUID.randomUUID().toString();
         String momoOrderId = "MOMO_" + orderId + "_" + System.currentTimeMillis();
+        String orderInfo = "Thanh toan don hang #" + orderId;
+        String extraData = "";
+        String requestType = "captureWallet";
 
-        // Build raw signature theo tài liệu MoMo
+        // Build raw signature theo đúng thứ tự alphabet của MoMo
         String rawSignature = "accessKey=" + moMoProperties.getAccessKey()
                 + "&amount=" + amount
-                + "&extraData="
+                + "&extraData=" + extraData
                 + "&ipnUrl=" + moMoProperties.getIpnUrl()
                 + "&orderId=" + momoOrderId
-                + "&orderInfo=Thanh toan don hang #" + orderId
+                + "&orderInfo=" + orderInfo
                 + "&partnerCode=" + moMoProperties.getPartnerCode()
                 + "&redirectUrl=" + moMoProperties.getReturnUrl()
                 + "&requestId=" + requestId
-                + "&requestType=captureWallet";
+                + "&requestType=" + requestType;
 
         String signature = hmacSHA256(moMoProperties.getSecretKey(), rawSignature);
 
-        // Trong thực tế sẽ gọi API MoMo để lấy payUrl
-        // Ở đây trả về placeholder URL do cần tài khoản sandbox thực
-        String paymentUrl = moMoProperties.getEndpoint()
-                + "?partnerCode=" + moMoProperties.getPartnerCode()
-                + "&orderId=" + momoOrderId
-                + "&amount=" + amount
-                + "&requestId=" + requestId;
+        // Thông tin người dùng gửi kèm để hiển thị trên trang thanh toán MoMo
+        Map<String, String> userInfo = new HashMap<>();
+        userInfo.put("name", order.getFirstName() + " " + order.getLastName());
+        userInfo.put("phoneNumber", order.getPhoneNumber());
+        userInfo.put("email", order.getEmail() != null ? order.getEmail() : "");
 
-        log.info("MoMo payment URL created for order #{}, signature: {}", orderId, signature);
+        // Đóng gói request body JSON
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("partnerCode", moMoProperties.getPartnerCode());
+        requestBody.put("accessKey", moMoProperties.getAccessKey());
+        requestBody.put("requestId", requestId);
+        requestBody.put("amount", amount);
+        requestBody.put("orderId", momoOrderId);
+        requestBody.put("orderInfo", orderInfo);
+        requestBody.put("redirectUrl", moMoProperties.getReturnUrl());
+        requestBody.put("ipnUrl", moMoProperties.getIpnUrl());
+        requestBody.put("extraData", extraData);
+        requestBody.put("requestType", requestType);
+        requestBody.put("userInfo", userInfo);
+        requestBody.put("signature", signature);
+        requestBody.put("lang", "vi");
 
-        return PaymentUrlResponse.builder()
-                .orderId(orderId)
-                .paymentUrl(paymentUrl)
-                .build();
+        // Gọi HTTP POST tới API MoMo
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    moMoProperties.getEndpoint(), entity, Map.class);
+            Map<String, Object> responseBody = response.getBody();
+
+            if (responseBody == null) {
+                throw new RuntimeException("MoMo không trả về response body");
+            }
+
+            String resultCode = String.valueOf(responseBody.get("resultCode"));
+            if (!"0".equals(resultCode)) {
+                throw new RuntimeException("MoMo lỗi [" + resultCode + "]: " + responseBody.get("message"));
+            }
+
+            String payUrl = String.valueOf(responseBody.get("payUrl"));
+            log.info("MoMo payment URL tạo thành công cho đơn #{}: {}", orderId, payUrl);
+
+            return PaymentUrlResponse.builder()
+                    .orderId(orderId)
+                    .paymentUrl(payUrl)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Lỗi khởi tạo thanh toán MoMo cho đơn #{}: {}", orderId, e.getMessage());
+            throw new RuntimeException("Không thể khởi tạo thanh toán MoMo: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -209,29 +277,104 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public Map<String, String> processMoMoIpn(Map<String, String> params) {
+    public Map<String, String> processMoMoIpn(Map<String, Object> params) {
         Map<String, String> result = new HashMap<>();
 
-        String resultCode = params.get("resultCode");
-        String orderInfo = params.get("orderInfo");
-
-        // Extract orderId từ orderInfo
         try {
+            // Parse các field từ IPN body
+            String orderId      = String.valueOf(params.get("orderId"));
+            String requestId    = String.valueOf(params.get("requestId"));
+            String amount       = String.valueOf(params.get("amount"));
+            String orderInfo    = String.valueOf(params.get("orderInfo"));
+            String orderType    = String.valueOf(params.get("orderType"));
+            String transId      = String.valueOf(params.get("transId"));
+            String resultCode   = String.valueOf(params.get("resultCode"));
+            String message      = String.valueOf(params.get("message"));
+            String payType      = String.valueOf(params.get("payType"));
+            String responseTime = String.valueOf(params.get("responseTime"));
+            String extraData    = String.valueOf(params.get("extraData"));
+            String receivedSig  = String.valueOf(params.get("signature"));
+
+            // 1. Tạo rawSignature IPN theo thứ tự alphabet bắt buộc của MoMo
+            String rawSignature = "accessKey=" + moMoProperties.getAccessKey()
+                    + "&amount=" + amount
+                    + "&extraData=" + extraData
+                    + "&message=" + message
+                    + "&orderId=" + orderId
+                    + "&orderInfo=" + orderInfo
+                    + "&orderType=" + orderType
+                    + "&partnerCode=" + moMoProperties.getPartnerCode()
+                    + "&payType=" + payType
+                    + "&requestId=" + requestId
+                    + "&responseTime=" + responseTime
+                    + "&resultCode=" + resultCode
+                    + "&transId=" + transId;
+
+            // 2. Ký lại bằng secretKey và so sánh
+            String expectedSig = hmacSHA256(moMoProperties.getSecretKey(), rawSignature);
+            boolean isValidSignature = expectedSig.equals(receivedSig);
+
+            if (!isValidSignature) {
+                log.warn("[MoMo IPN] Chữ ký không hợp lệ! Bỏ qua IPN.");
+                result.put("status", "INVALID_SIGNATURE");
+                result.put("message", "Chữ ký không hợp lệ");
+                return result;
+            }
+
+            // 3. Xử lý kết quả thanh toán
             if ("0".equals(resultCode)) {
-                // Thanh toán thành công
-                String orderIdStr = extractOrderIdFromMoMo(params.get("orderId"));
-                updateOrderPaymentSuccess(Long.parseLong(orderIdStr), "MoMo IPN");
+                String realOrderId = extractOrderIdFromMoMo(orderId);
+                updateOrderPaymentSuccess(Long.parseLong(realOrderId), "MoMo IPN");
                 result.put("status", "SUCCESS");
+                result.put("message", "Thanh toán thành công");
             } else {
+                log.warn("[MoMo IPN] Thanh toán thất bại. resultCode={}, message={}", resultCode, message);
                 result.put("status", "FAILED");
                 result.put("message", "Thanh toán MoMo thất bại. Mã lỗi: " + resultCode);
             }
+
         } catch (Exception e) {
+            log.error("[MoMo IPN] Lỗi xử lý IPN: {}", e.getMessage());
             result.put("status", "ERROR");
             result.put("message", "Lỗi xử lý IPN: " + e.getMessage());
         }
 
         return result;
+    }
+
+    @Override
+    public String processMoMoReturn(Map<String, String> params) {
+        String resultCode = params.get("resultCode");
+
+        if ("0".equals(resultCode)) {
+            // Fallback: cập nhật DB nếu IPN chưa đến được (môi trường localhost)
+            try {
+                Map<String, Object> returnData = new HashMap<>(params);
+                processMoMoIpn(returnData);
+            } catch (Exception e) {
+                log.warn("[MoMo Return Fallback] Lỗi khi fallback update DB: {}", e.getMessage());
+            }
+
+            return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Thanh toán MoMo</title>"
+                    + "<style>body{font-family:sans-serif;display:flex;justify-content:center;"
+                    + "align-items:center;height:100vh;margin:0;background:#f0fdf4;}"
+                    + ".card{background:#fff;border-radius:12px;padding:40px;text-align:center;"
+                    + "box-shadow:0 4px 20px rgba(0,0,0,0.1);}"
+                    + "h1{color:#16a34a;} p{color:#555;}</style></head>"
+                    + "<body><div class=\"card\"><h1>&#10003; Thanh toán thành công!</h1>"
+                    + "<p>Cảm ơn bạn đã thanh toán qua MoMo. Đơn hàng của bạn đang được xử lý.</p>"
+                    + "</div></body></html>";
+        } else {
+            return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Thanh toán MoMo</title>"
+                    + "<style>body{font-family:sans-serif;display:flex;justify-content:center;"
+                    + "align-items:center;height:100vh;margin:0;background:#fef2f2;}"
+                    + ".card{background:#fff;border-radius:12px;padding:40px;text-align:center;"
+                    + "box-shadow:0 4px 20px rgba(0,0,0,0.1);}"
+                    + "h1{color:#dc2626;} p{color:#555;}</style></head>"
+                    + "<body><div class=\"card\"><h1>&#10007; Thanh toán thất bại!</h1>"
+                    + "<p>Thanh toán bị hủy hoặc gặp lỗi. Mã lỗi: " + resultCode + "</p>"
+                    + "</div></body></html>";
+        }
     }
 
     // ==================== Helper Methods ====================

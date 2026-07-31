@@ -88,7 +88,7 @@ INSERT INTO `coupons` (`code`, `name`, `discount_rate`, `max_discount_amount`, `
 --    UserRole enum: ADMIN, CUSTOMER, STAFF
 --    Mật khẩu demo cho tất cả user: 123456
 -- -------------------------------------------------------------------------
-INSERT INTO `users` (`username`, `password_hash`, `email`, `phone`, `full_name`, `avatar_url`, `date_of_birth`, `user_role`, `rank_id`, `current_point`, `is_active`, `created_at`, `updated_at`) VALUES
+INSERT INTO `users` (`username`, `password_hash`, `email`, `phone`, `full_name`, `avatar_image`, `date_of_birth`, `user_role`, `rank_id`, `current_point`, `is_active`, `created_at`, `updated_at`) VALUES
 -- Admin (id=1)
 ('admin',       '$2a$10$rLfFK4LQmKRyQKUOSZj4E.nQMsXS0hcIbkgrDDziEy4gLoCZNTBGa', 'admin@fashionformen.vn',     '0900000001', 'Nguyễn Quản Trị',  NULL,                               '1990-01-15', 'ADMIN',    4, 9999, b'1', NOW(6), NOW(6)),
 -- Staff (id=2)

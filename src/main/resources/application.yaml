@@ -68,10 +68,10 @@ app:
 
   momo:
     endpoint: https://test-payment.momo.vn/v2/gateway/api/create
-    partner-code: ${MOMO_PARTNER_CODE:SANDBOX}
-    access-key: ${MOMO_ACCESS_KEY:SANDBOX_KEY}
-    secret-key: ${MOMO_SECRET_KEY:SANDBOX_SECRET}
-    return-url: ${MOMO_RETURN_URL:http://localhost:5173/payment/momo/return}
+    partner-code: ${MOMO_PARTNER_CODE:MOMO}
+    access-key: ${MOMO_ACCESS_KEY:F8BBA842ECF85}
+    secret-key: ${MOMO_SECRET_KEY:K951B6PE1waDMi640xX08PD3vg6EkVlz}
+    return-url: ${MOMO_RETURN_URL:http://localhost:8080/api/payments/momo/return}
     ipn-url: ${MOMO_IPN_URL:http://localhost:8080/api/payments/momo/ipn}
 
 

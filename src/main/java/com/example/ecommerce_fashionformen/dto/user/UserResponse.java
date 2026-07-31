@@ -1,6 +1,7 @@
 package com.example.ecommerce_fashionformen.dto.user;
 
 import com.example.ecommerce_fashionformen.domain.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,7 +17,8 @@ public class UserResponse {
     private String email;
     private String phone;
     private String fullName;
-    // Ảnh đại diện dạng Base64
+    // URL ảnh đại diện
+    @JsonAlias({"avatarUrl", "avatar_url"})
     private String avatarImage;
     private int currentPoint;
     private UserRole userRole;

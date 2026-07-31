@@ -1,6 +1,7 @@
 package com.example.ecommerce_fashionformen.dto.user;
 
 import com.example.ecommerce_fashionformen.controllers.common.validation.MinAge;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -24,7 +25,8 @@ public class UserUpdateRequest {
     @Pattern(regexp = "^(0[3|5|7|8|9])+([0-9]{8})$", message = "Số điện thoại không hợp lệ")
     private String phone;
 
-   
+    @Size(max = 500, message = "URL ảnh đại diện tối đa 500 ký tự")
+    @JsonAlias({"avatarUrl", "avatar_url"})
     private String avatarImage;
 
    @MinAge(value = 13, message = "Bạn phải từ 13 tuổi trở lên mới được mua hàng")

@@ -3,13 +3,15 @@ package com.example.ecommerce_fashionformen.controllers;
 import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
 import com.example.ecommerce_fashionformen.services.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
- * Public endpoints cho payment callbacks (VNPay return, IPN; MoMo IPN).
- * Không cần authentication vì gọi từ bên thứ 3.
+ * Public endpoints cho payment callbacks (VNPay return, IPN; MoMo IPN, Return).
+ * Không cần authentication vì gọi từ bên thứ 3 hoặc redirect trình duyệt.
  */
 @RestController
 @RequestMapping("/api/payments")
@@ -17,6 +19,8 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
+
+    // ===================== VNPay =====================
 
     @GetMapping("/vnpay/return")
     public ApiResponse<Map<String, String>> vnPayReturn(@RequestParam Map<String, String> params) {
@@ -34,8 +38,29 @@ public class PaymentController {
         return paymentService.processVnPayIpn(params);
     }
 
+    // ===================== MoMo =====================
+
+    /**
+     * Webhook IPN: MoMo gọi server-to-server để thông báo kết quả giao dịch.
+     * Phải verify chữ ký HMAC-SHA256 trước khi xử lý.
+     * MoMo yêu cầu server trả về HTTP 200 khi nhận được.
+     */
     @PostMapping("/momo/ipn")
-    public Map<String, String> moMoIpn(@RequestBody Map<String, String> params) {
-        return paymentService.processMoMoIpn(params);
+    public ResponseEntity<Map<String, String>> moMoIpn(@RequestBody Map<String, Object> params) {
+        Map<String, String> result = paymentService.processMoMoIpn(params);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Redirect Return: MoMo chuyển hướng trình duyệt người dùng về đây sau khi thanh toán.
+     * Trả HTML trực tiếp để hiển thị kết quả cho người dùng.
+     */
+    @GetMapping("/momo/return")
+    public ResponseEntity<String> moMoReturn(@RequestParam Map<String, String> params) {
+        String html = paymentService.processMoMoReturn(params);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
     }
 }
+

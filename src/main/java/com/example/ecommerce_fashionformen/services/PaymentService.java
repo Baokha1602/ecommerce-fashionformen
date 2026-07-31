@@ -10,5 +10,7 @@ public interface PaymentService {
     PaymentUrlResponse createMoMoUrl(Long orderId, Long userId);
     Map<String, String> processVnPayReturn(Map<String, String> params);
     Map<String, String> processVnPayIpn(Map<String, String> params);
-    Map<String, String> processMoMoIpn(Map<String, String> params);
+    Map<String, String> processMoMoIpn(Map<String, Object> params);
+    String processMoMoReturn(Map<String, String> params);
 }
+

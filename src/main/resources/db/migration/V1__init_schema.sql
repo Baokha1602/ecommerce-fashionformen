@@ -152,7 +152,7 @@ CREATE TABLE `users` (
     `email`         VARCHAR(100) DEFAULT NULL,
     `phone`         VARCHAR(20) NOT NULL UNIQUE,
     `full_name`     VARCHAR(255) NOT NULL,
-    `avatar_url`    VARCHAR(500) DEFAULT NULL,
+    `avatar_image`  VARCHAR(500) DEFAULT NULL,
     `date_of_birth` DATE DEFAULT NULL,
     `user_role`     ENUM('ADMIN', 'CUSTOMER', 'STAFF') NOT NULL DEFAULT 'CUSTOMER',
     `rank_id`       BIGINT DEFAULT NULL,

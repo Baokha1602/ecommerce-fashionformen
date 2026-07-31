@@ -3,6 +3,7 @@ package com.example.ecommerce_fashionformen.controllers;
 import com.example.ecommerce_fashionformen.controllers.common.ApiResponse;
 import com.example.ecommerce_fashionformen.services.PaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -42,13 +44,26 @@ public class PaymentController {
 
     /**
      * Webhook IPN: MoMo gọi server-to-server để thông báo kết quả giao dịch.
-     * Phải verify chữ ký HMAC-SHA256 trước khi xử lý.
-     * MoMo yêu cầu server trả về HTTP 200 khi nhận được.
+     *
+     * Quan trọng: LUÔN trả HTTP 200 cho MoMo dù xử lý thành công hay thất bại.
+     * Nếu server trả HTTP != 200, MoMo sẽ retry IPN nhiều lần gây xử lý trùng.
+     *
+     * Exception từ Service (do @Transactional rollback) được bắt tại đây,
+     * đảm bảo DB rollback đúng mà vẫn trả HTTP 200 cho MoMo.
      */
     @PostMapping("/momo/ipn")
     public ResponseEntity<Map<String, String>> moMoIpn(@RequestBody Map<String, Object> params) {
-        Map<String, String> result = paymentService.processMoMoIpn(params);
-        return ResponseEntity.ok(result);
+        try {
+            Map<String, String> result = paymentService.processMoMoIpn(params);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("[MoMo IPN] Lỗi xử lý, DB đã rollback: {}", e.getMessage());
+            // Vẫn trả HTTP 200 để MoMo không retry, kèm thông báo lỗi
+            return ResponseEntity.ok(Map.of(
+                    "status", "ERROR",
+                    "message", "Lỗi xử lý IPN: " + e.getMessage()
+            ));
+        }
     }
 
     /**

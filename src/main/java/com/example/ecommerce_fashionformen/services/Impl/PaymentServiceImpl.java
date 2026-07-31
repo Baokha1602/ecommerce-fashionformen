@@ -5,17 +5,23 @@ import com.example.ecommerce_fashionformen.config.MoMoProperties;
 import com.example.ecommerce_fashionformen.controllers.common.exception.BadRequestException;
 import com.example.ecommerce_fashionformen.controllers.common.exception.NotFoundException;
 import com.example.ecommerce_fashionformen.domain.entity.Order;
+import com.example.ecommerce_fashionformen.domain.entity.OrderItem;
 import com.example.ecommerce_fashionformen.domain.entity.OrderStatusHistory;
+import com.example.ecommerce_fashionformen.domain.entity.ProductVariant;
 import com.example.ecommerce_fashionformen.domain.enums.OrderStatus;
 import com.example.ecommerce_fashionformen.domain.enums.PaymentMethod;
 import com.example.ecommerce_fashionformen.dto.order.PaymentUrlResponse;
+import com.example.ecommerce_fashionformen.repository.OrderItemRepository;
 import com.example.ecommerce_fashionformen.repository.OrderRepository;
 import com.example.ecommerce_fashionformen.repository.OrderStatusHistoryRepository;
+import com.example.ecommerce_fashionformen.repository.ProductVariantsRepository;
 import com.example.ecommerce_fashionformen.services.NotificationService;
 import com.example.ecommerce_fashionformen.services.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,11 +46,18 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ProductVariantsRepository productVariantsRepository;
     private final VnPayProperties vnPayProperties;
     private final MoMoProperties moMoProperties;
     private final NotificationService notificationService;
 
-    /** MoMo yêu cầu timeout tối thiểu 30s khi gọi API create payment */
+    // Self-inject qua @Lazy để fix lỗi self-proxy (giúp @Transactional hoạt động đúng)
+    @Autowired
+    @Lazy
+    private PaymentService self;
+
+    // Timeout tối thiểu 30s theo yêu cầu MoMo
     private final RestTemplate restTemplate = buildRestTemplate();
 
     private static final long MOMO_MIN_AMOUNT = 1_000L;
@@ -54,8 +67,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     private RestTemplate buildRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(30_000); // 30 giây
-        factory.setReadTimeout(30_000);    // 30 giây
+        factory.setConnectTimeout(30_000);
+        factory.setReadTimeout(30_000);
         return new RestTemplate(factory);
     }
 
@@ -121,7 +134,7 @@ public class PaymentServiceImpl implements PaymentService {
         String extraData = "";
         String requestType = "captureWallet";
 
-        // Build raw signature theo đúng thứ tự alphabet của MoMo
+        // Build raw signature theo thứ tự alphabet của MoMo
         String rawSignature = "accessKey=" + moMoProperties.getAccessKey()
                 + "&amount=" + amount
                 + "&extraData=" + extraData
@@ -135,13 +148,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         String signature = hmacSHA256(moMoProperties.getSecretKey(), rawSignature);
 
-        // Thông tin người dùng gửi kèm để hiển thị trên trang thanh toán MoMo
+        // Gửi kèm thông tin user để hiển thị trên trang thanh toán MoMo
         Map<String, String> userInfo = new HashMap<>();
         userInfo.put("name", order.getFirstName() + " " + order.getLastName());
         userInfo.put("phoneNumber", order.getPhoneNumber());
         userInfo.put("email", order.getEmail() != null ? order.getEmail() : "");
 
-        // Đóng gói request body JSON
+        // Đóng gói request body
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("partnerCode", moMoProperties.getPartnerCode());
         requestBody.put("accessKey", moMoProperties.getAccessKey());
@@ -275,84 +288,89 @@ public class PaymentServiceImpl implements PaymentService {
         return result;
     }
 
+    // ==================== MoMo IPN (server-to-server) ====================
+
+    // Xử lý IPN MoMo: Không bắt Exception ở đây để @Transactional rollback khi có lỗi DB.
     @Override
     @Transactional
     public Map<String, String> processMoMoIpn(Map<String, Object> params) {
         Map<String, String> result = new HashMap<>();
 
-        try {
-            // Parse các field từ IPN body
-            String orderId      = String.valueOf(params.get("orderId"));
-            String requestId    = String.valueOf(params.get("requestId"));
-            String amount       = String.valueOf(params.get("amount"));
-            String orderInfo    = String.valueOf(params.get("orderInfo"));
-            String orderType    = String.valueOf(params.get("orderType"));
-            String transId      = String.valueOf(params.get("transId"));
-            String resultCode   = String.valueOf(params.get("resultCode"));
-            String message      = String.valueOf(params.get("message"));
-            String payType      = String.valueOf(params.get("payType"));
-            String responseTime = String.valueOf(params.get("responseTime"));
-            String extraData    = String.valueOf(params.get("extraData"));
-            String receivedSig  = String.valueOf(params.get("signature"));
+        // Parse các field từ IPN body
+        String orderId      = String.valueOf(params.get("orderId"));
+        String requestId    = String.valueOf(params.get("requestId"));
+        String amount       = String.valueOf(params.get("amount"));
+        String orderInfo    = String.valueOf(params.get("orderInfo"));
+        String orderType    = String.valueOf(params.get("orderType"));
+        String transId      = String.valueOf(params.get("transId"));
+        String resultCode   = String.valueOf(params.get("resultCode"));
+        String message      = String.valueOf(params.get("message"));
+        String payType      = String.valueOf(params.get("payType"));
+        String responseTime = String.valueOf(params.get("responseTime"));
+        String extraData    = String.valueOf(params.get("extraData"));
+        String receivedSig  = String.valueOf(params.get("signature"));
 
-            // 1. Tạo rawSignature IPN theo thứ tự alphabet bắt buộc của MoMo
-            String rawSignature = "accessKey=" + moMoProperties.getAccessKey()
-                    + "&amount=" + amount
-                    + "&extraData=" + extraData
-                    + "&message=" + message
-                    + "&orderId=" + orderId
-                    + "&orderInfo=" + orderInfo
-                    + "&orderType=" + orderType
-                    + "&partnerCode=" + moMoProperties.getPartnerCode()
-                    + "&payType=" + payType
-                    + "&requestId=" + requestId
-                    + "&responseTime=" + responseTime
-                    + "&resultCode=" + resultCode
-                    + "&transId=" + transId;
+        // 1. Tạo rawSignature IPN theo thứ tự alphabet bắt buộc của MoMo
+        String rawSignature = "accessKey=" + moMoProperties.getAccessKey()
+                + "&amount=" + amount
+                + "&extraData=" + extraData
+                + "&message=" + message
+                + "&orderId=" + orderId
+                + "&orderInfo=" + orderInfo
+                + "&orderType=" + orderType
+                + "&partnerCode=" + moMoProperties.getPartnerCode()
+                + "&payType=" + payType
+                + "&requestId=" + requestId
+                + "&responseTime=" + responseTime
+                + "&resultCode=" + resultCode
+                + "&transId=" + transId;
 
-            // 2. Ký lại bằng secretKey và so sánh
-            String expectedSig = hmacSHA256(moMoProperties.getSecretKey(), rawSignature);
-            boolean isValidSignature = expectedSig.equals(receivedSig);
+        // 2. Verify chữ ký HMAC-SHA256
+        String expectedSig = hmacSHA256(moMoProperties.getSecretKey(), rawSignature);
+        if (!expectedSig.equals(receivedSig)) {
+            log.warn("[MoMo IPN] Chữ ký không hợp lệ! orderId={}", orderId);
+            result.put("status", "INVALID_SIGNATURE");
+            result.put("message", "Chữ ký không hợp lệ");
+            return result;
+        }
 
-            if (!isValidSignature) {
-                log.warn("[MoMo IPN] Chữ ký không hợp lệ! Bỏ qua IPN.");
-                result.put("status", "INVALID_SIGNATURE");
-                result.put("message", "Chữ ký không hợp lệ");
-                return result;
-            }
+        // 3. Tách real orderId từ format MOMO_{id}_{timestamp}
+        String realOrderId = extractOrderIdFromMoMo(orderId);
+        Long orderIdLong = Long.parseLong(realOrderId);
 
-            // 3. Xử lý kết quả thanh toán
-            if ("0".equals(resultCode)) {
-                String realOrderId = extractOrderIdFromMoMo(orderId);
-                updateOrderPaymentSuccess(Long.parseLong(realOrderId), "MoMo IPN");
-                result.put("status", "SUCCESS");
-                result.put("message", "Thanh toán thành công");
-            } else {
-                log.warn("[MoMo IPN] Thanh toán thất bại. resultCode={}, message={}", resultCode, message);
-                result.put("status", "FAILED");
-                result.put("message", "Thanh toán MoMo thất bại. Mã lỗi: " + resultCode);
-            }
-
-        } catch (Exception e) {
-            log.error("[MoMo IPN] Lỗi xử lý IPN: {}", e.getMessage());
-            result.put("status", "ERROR");
-            result.put("message", "Lỗi xử lý IPN: " + e.getMessage());
+        // 4. Xử lý kết quả - exception được để bay ra để @Transactional rollback
+        if ("0".equals(resultCode)) {
+            updateOrderPaymentSuccess(orderIdLong, "MoMo IPN");
+            result.put("status", "SUCCESS");
+            result.put("message", "Thanh toán thành công");
+            log.info("[MoMo IPN] Thanh toán thành công. orderId={}, transId={}", orderId, transId);
+        } else {
+            // resultCode != 0: thanh toán thất bại / hết hạn / bị hủy
+            log.warn("[MoMo IPN] Thanh toán thất bại. orderId={}, resultCode={}, message={}",
+                    orderId, resultCode, message);
+            updateOrderPaymentFailed(orderIdLong, "MoMo IPN", "MoMo resultCode=" + resultCode + ": " + message);
+            result.put("status", "FAILED");
+            result.put("message", "Thanh toán MoMo thất bại. Mã lỗi: " + resultCode);
         }
 
         return result;
     }
 
+    // ==================== MoMo Redirect Return (browser) ====================
+
+    // Xử lý redirect return của MoMo: Gọi qua proxy "self" để @Transactional của processMoMoIpn hoạt động đúng.
     @Override
     public String processMoMoReturn(Map<String, String> params) {
         String resultCode = params.get("resultCode");
 
         if ("0".equals(resultCode)) {
             // Fallback: cập nhật DB nếu IPN chưa đến được (môi trường localhost)
+            // Gọi qua self (Spring proxy) để @Transactional hoạt động đúng
             try {
                 Map<String, Object> returnData = new HashMap<>(params);
-                processMoMoIpn(returnData);
+                self.processMoMoIpn(returnData);
             } catch (Exception e) {
-                log.warn("[MoMo Return Fallback] Lỗi khi fallback update DB: {}", e.getMessage());
+                log.warn("[MoMo Return Fallback] Lỗi fallback update DB: {}", e.getMessage());
             }
 
             return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Thanh toán MoMo</title>"
@@ -365,6 +383,14 @@ public class PaymentServiceImpl implements PaymentService {
                     + "<p>Cảm ơn bạn đã thanh toán qua MoMo. Đơn hàng của bạn đang được xử lý.</p>"
                     + "</div></body></html>";
         } else {
+            // Thất bại / hủy / hết hạn QR - cũng fallback hủy đơn nếu cần
+            try {
+                Map<String, Object> returnData = new HashMap<>(params);
+                self.processMoMoIpn(returnData);
+            } catch (Exception e) {
+                log.warn("[MoMo Return Fallback] Lỗi khi xử lý failed return: {}", e.getMessage());
+            }
+
             return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Thanh toán MoMo</title>"
                     + "<style>body{font-family:sans-serif;display:flex;justify-content:center;"
                     + "align-items:center;height:100vh;margin:0;background:#fef2f2;}"
@@ -372,7 +398,7 @@ public class PaymentServiceImpl implements PaymentService {
                     + "box-shadow:0 4px 20px rgba(0,0,0,0.1);}"
                     + "h1{color:#dc2626;} p{color:#555;}</style></head>"
                     + "<body><div class=\"card\"><h1>&#10007; Thanh toán thất bại!</h1>"
-                    + "<p>Thanh toán bị hủy hoặc gặp lỗi. Mã lỗi: " + resultCode + "</p>"
+                    + "<p>Thanh toán bị hủy hoặc hết hạn. Mã lỗi: " + resultCode + "</p>"
                     + "</div></body></html>";
         }
     }
@@ -402,9 +428,13 @@ public class PaymentServiceImpl implements PaymentService {
         return order;
     }
 
+    // Cập nhật đơn hàng thành công, dùng Pessimistic Lock chống race condition
     private void updateOrderPaymentSuccess(Long orderId, String source) {
-        Order order = orderRepository.findById(orderId).orElse(null);
-        if (order == null || Boolean.TRUE.equals(order.getIsPaid())) return;
+        Order order = orderRepository.findByIdWithLock(orderId).orElse(null);
+        if (order == null || Boolean.TRUE.equals(order.getIsPaid())) {
+            log.info("[{}] Đơn #{} đã được xử lý trước đó, bỏ qua.", source, orderId);
+            return;
+        }
 
         order.setIsPaid(true);
         order.setOrderStatus(OrderStatus.PROCESSING);
@@ -421,12 +451,63 @@ public class PaymentServiceImpl implements PaymentService {
 
         log.info("Đơn #{} thanh toán thành công qua {}", orderId, source);
 
-        // Thông báo cho ADMIN/STAFF về thanh toán online thành công (fire-and-forget)
         try {
             notificationService.notifyOrderPaymentSuccess(orderId, source);
         } catch (Exception e) {
-            log.warn("[NOTIFICATION] Không thể gửi thông báo thanh toán đơn #{}: {}",
-                    orderId, e.getMessage());
+            log.warn("[NOTIFICATION] Không thể gửi thông báo thanh toán đơn #{}: {}", orderId, e.getMessage());
+        }
+    }
+
+    // Cập nhật đơn hàng thất bại/hủy/hết hạn QR, dùng Pessimistic Lock và hoàn tồn kho
+    private void updateOrderPaymentFailed(Long orderId, String source, String reason) {
+        Order order = orderRepository.findByIdWithLock(orderId).orElse(null);
+        if (order == null) {
+            log.warn("[{}] Không tìm thấy đơn #{} để xử lý thất bại.", source, orderId);
+            return;
+        }
+
+        // Chỉ xử lý nếu đơn vẫn đang PENDING và chưa thanh toán
+        if (order.getOrderStatus() != OrderStatus.PENDING || Boolean.TRUE.equals(order.getIsPaid())) {
+            log.info("[{}] Đơn #{} không ở trạng thái chờ, bỏ qua xử lý thất bại. status={}",
+                    source, orderId, order.getOrderStatus());
+            return;
+        }
+
+        // Cập nhật trạng thái đơn hàng → CANCELLED
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        OrderStatusHistory history = OrderStatusHistory.builder()
+                .order(order)
+                .status(OrderStatus.CANCELLED)
+                .changedBy("SYSTEM (" + source + ")")
+                .changedAt(LocalDateTime.now())
+                .note("Thanh toán thất bại/hết hạn: " + reason)
+                .build();
+        orderStatusHistoryRepository.save(history);
+
+        // Hoàn tồn kho: cộng lại stockTotal, trừ stockLock
+        restoreStockForOrder(orderId, source);
+
+        log.info("[{}] Đơn #{} đã bị hủy và hoàn kho. Lý do: {}", source, orderId, reason);
+    }
+
+    // Hoàn tồn kho cho các sản phẩm trong đơn hàng
+    private void restoreStockForOrder(Long orderId, String source) {
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        for (OrderItem item : items) {
+            productVariantsRepository.findByIdForUpdate(item.getProductVariantId())
+                    .ifPresent(variant -> {
+                        int qty = item.getQuantity();
+                        // Hoàn tồn kho thực tế
+                        variant.setStockTotal(variant.getStockTotal() + qty);
+                        // Giải phóng kho đang khóa (nếu có)
+                        int newLock = Math.max(0, variant.getStockLock() - qty);
+                        variant.setStockLock(newLock);
+                        productVariantsRepository.save(variant);
+                        log.info("[{}] Hoàn kho variantId={}, +{} units", source,
+                                item.getProductVariantId(), qty);
+                    });
         }
     }
 

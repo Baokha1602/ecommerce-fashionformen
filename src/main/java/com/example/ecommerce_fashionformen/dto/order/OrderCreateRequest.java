@@ -2,10 +2,13 @@ package com.example.ecommerce_fashionformen.dto.order;
 
 import com.example.ecommerce_fashionformen.domain.enums.PaymentMethod;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -30,8 +33,6 @@ public class OrderCreateRequest {
     private PaymentMethod paymentMethod;
 
     private String notes;
-
-    // Không còn nhận orderItems và couponCode từ request body
-    // orderItems lấy từ CartItem trong giỏ hàng hiện tại
-    // couponCode lấy từ Cart.appliedCouponCode
+    @NotEmpty(message = "Vui lòng chọn ít nhất một sản phẩm để thanh toán")
+    private List<Long> selectedCartItemIds;
 }

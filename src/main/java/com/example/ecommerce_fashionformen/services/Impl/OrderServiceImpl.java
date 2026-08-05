@@ -67,22 +67,31 @@ public class OrderServiceImpl implements OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Người dùng không tồn tại"));
 
-        // 1. Lấy giỏ hàng từ Cart (không nhận từ request body)
+        // 1. Lấy giỏ hàng từ Cart
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new BadRequestException("Giỏ hàng không tồn tại"));
 
-        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
-        if (cartItems.isEmpty()) {
-            throw new BadRequestException("Giỏ hàng trống, không thể tạo đơn hàng");
+        // Lấy tất cả CartItem của user và LỌC theo selectedCartItemIds
+        List<CartItem> allCartItems = cartItemRepository.findByCartId(cart.getId());
+
+        List<CartItem> selectedCartItems = allCartItems.stream()
+                .filter(item -> request.getSelectedCartItemIds().contains(item.getId()))
+                .toList();
+
+        // Kiểm tra tính hợp lệ của danh sách chọn
+        if (selectedCartItems.isEmpty()) {
+            throw new BadRequestException("Không tìm thấy sản phẩm nào được chọn trong giỏ hàng");
+        }
+        if (selectedCartItems.size() != request.getSelectedCartItemIds().size()) {
+            throw new BadRequestException("Một số sản phẩm được chọn không hợp lệ hoặc không thuộc giỏ hàng của bạn");
         }
 
-        // 2. Lock và kiểm tra tồn kho từng variant
+        // 2. Lock và kiểm tra tồn kho từng variant (Chỉ lặp qua selectedCartItems)
         BigDecimal subtotal = BigDecimal.ZERO;
         BigDecimal productDiscount = BigDecimal.ZERO;
         List<ProductVariant> lockedVariants = new ArrayList<>();
-        List<CartItem> validItems = new ArrayList<>();
 
-        for (CartItem cartItem : cartItems) {
+        for (CartItem cartItem : selectedCartItems) {
             // Pessimistic lock — SELECT ... FOR UPDATE
             ProductVariant variant = productVariantRepository.findByIdForUpdate(cartItem.getProductVariantId())
                     .orElseThrow(() -> new NotFoundException(
@@ -105,7 +114,6 @@ public class OrderServiceImpl implements OrderService {
             productDiscount = productDiscount.add(itemPrice.subtract(itemDiscountPrice).multiply(qty));
 
             lockedVariants.add(variant);
-            validItems.add(cartItem);
         }
 
         // 4. Tính coupon/rank discount dùng DiscountCalculationService
@@ -115,7 +123,6 @@ public class OrderServiceImpl implements OrderService {
         DiscountResult discountResult = discountCalculationService.calculate(
                 subtotalAfterProductDiscount, couponCode, user.getRank());
 
-        // Nếu coupon lỗi nhưng vẫn có mã → báo lỗi rõ ràng
         if (couponCode != null && !couponCode.isEmpty() && !discountResult.isSuccess()) {
             throw new BadRequestException("Coupon không hợp lệ: " + discountResult.getErrorMessage());
         }
@@ -140,11 +147,11 @@ public class OrderServiceImpl implements OrderService {
         order.setCouponId(discountResult.getAppliedCouponId());
         order.setCouponCode(couponCode);
 
-        // Calculate dynamic shipping fee
+        // Tính phí ship tự động (dựa trên số lượng của selectedCartItems)
         UserAddress userAddress = userAddressRepository.findById(request.getUserAddressId())
                 .orElseThrow(() -> new NotFoundException("Địa chỉ không tồn tại"));
-        
-        int totalQuantity = validItems.stream().mapToInt(CartItem::getQuantity).sum();
+
+        int totalQuantity = selectedCartItems.stream().mapToInt(CartItem::getQuantity).sum();
         BigDecimal actualShippingFee = BigDecimal.ZERO;
         if (totalQuantity > 0) {
             try {
@@ -172,8 +179,8 @@ public class OrderServiceImpl implements OrderService {
         order = orderRepository.save(order);
 
         // Tạo OrderItems
-        for (int i = 0; i < validItems.size(); i++) {
-            CartItem cartItem = validItems.get(i);
+        for (int i = 0; i < selectedCartItems.size(); i++) {
+            CartItem cartItem = selectedCartItems.get(i);
             ProductVariant variant = lockedVariants.get(i);
 
             OrderItem orderItem = new OrderItem();
@@ -188,10 +195,10 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(orderItem);
         }
 
-        // 6. Tăng stockLock — giữ chỗ hàng (stockTotal chỉ trừ khi DELIVERED)
-        for (int i = 0; i < validItems.size(); i++) {
+        // 6. Tăng stockLock — giữ chỗ hàng
+        for (int i = 0; i < selectedCartItems.size(); i++) {
             ProductVariant variant = lockedVariants.get(i);
-            CartItem cartItem = validItems.get(i);
+            CartItem cartItem = selectedCartItems.get(i);
             variant.setStockLock(variant.getStockLock() + cartItem.getQuantity());
             productVariantRepository.save(variant);
         }
@@ -208,7 +215,6 @@ public class OrderServiceImpl implements OrderService {
             coupon.setUsageLimit(coupon.getUsageLimit() - 1);
             couponRepository.save(coupon);
 
-            // Lưu lịch sử sử dụng coupon
             CouponUsageHistory usage = CouponUsageHistory.builder()
                     .coupon(coupon)
                     .order(order)
@@ -228,12 +234,14 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         orderStatusHistoryRepository.save(statusHistory);
 
-        // 8. Xóa toàn bộ CartItem + reset coupon
-        cartItemRepository.deleteAllByCartId(cart.getId());
+        // YÊU CHỈ XÓA CÁC CartItem ĐÃ ĐƯỢC CHỌN KHỎI DB
+        cartItemRepository.deleteAll(selectedCartItems);
+
+        // Reset coupon khỏi giỏ hàng vì mã này đã được gắn vào Order
         cart.setAppliedCouponCode(null);
         cartRepository.save(cart);
 
-        // 9. Thông báo cho ADMIN/STAFF về đơn hàng mới (fire-and-forget)
+        // 9. Thông báo cho ADMIN/STAFF
         final Long savedOrderId = order.getId();
         final String customerName = user.getFullName();
         try {
@@ -328,4 +336,26 @@ public class OrderServiceImpl implements OrderService {
 
         return mapper.map(order, OrderResponse.class);
     }
+
+    @Override
+    public BigDecimal calculateShippingFee(Long addressId, Integer totalQuantity) {
+        if (totalQuantity == null || totalQuantity <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        UserAddress userAddress = userAddressRepository.findById(addressId)
+                .orElseThrow(() -> new NotFoundException("Địa chỉ không tồn tại"));
+
+        try {
+            return ghnService.calculateShippingFee(
+                    totalQuantity,
+                    userAddress.getDistrictId().intValue(),
+                    userAddress.getWardId()
+            );
+        } catch (Exception e) {
+            log.error("Lỗi gọi GHN tính phí ship, dùng phí mặc định: {}", e.getMessage());
+            return defaultShippingFee;
+        }
+    }
+
 }

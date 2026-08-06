@@ -28,6 +28,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
      * Pessimistic Write Lock: khóa dòng Order trong DB khi xử lý IPN/Return đồng thời.
      * Chống race condition khi MoMo gọi IPN nhiều lần hoặc IPN + Redirect chạy song song.
      * Yêu cầu: phải được gọi trong một @Transactional context.
+     * MariaDBDialect sẽ tự sinh ra cú pháp "FOR UPDATE" hợp lệ, không có OF/SKIP LOCKED.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")

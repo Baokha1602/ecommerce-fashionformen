@@ -15,6 +15,7 @@ import java.util.Optional;
 public interface ProductVariantsRepository extends JpaRepository<ProductVariant, Long> {
 
     // Pessimistic lock khi trừ/cộng tồn kho (tránh race condition mua cùng sản phẩm)
+    // MariaDBDialect sẽ tự sinh ra cú pháp "FOR UPDATE" hợp lệ, không có OF/SKIP LOCKED
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT pv FROM ProductVariant pv WHERE pv.id = :id")
     Optional<ProductVariant> findByIdForUpdate(@Param("id") Long id);

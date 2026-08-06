@@ -8,4 +8,4 @@ spring:
   jpa:
     properties:
       hibernate:
-        dialect:
+        dialect: org.hibernate.dialect.MariaDBDialect

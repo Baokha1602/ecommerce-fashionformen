@@ -18,7 +18,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.MariaDBDialect
 
 
   flyway:
@@ -86,6 +86,6 @@ app:
 #    tags-sorter: alpha
 
 ghn:
-  api-token: ${GHN_API_TOKEN:5ee56ab0-2492-11f1-a973-aee5264794df}
-  shop-id: ${GHN_SHOP_ID:199660}
+  api-token: ${GHN_API_TOKEN:c8c29b5d-91c2-11f1-a973-aee5264794df}
+  shop-id: ${GHN_SHOP_ID:208998}
   base-url: ${GHN_BASE_URL:https://dev-online-gateway.ghn.vn/shiip/public-api}

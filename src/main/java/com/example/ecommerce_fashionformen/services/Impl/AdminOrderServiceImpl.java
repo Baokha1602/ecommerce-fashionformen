@@ -10,8 +10,11 @@ import com.example.ecommerce_fashionformen.dto.order.OrderResponse;
 import com.example.ecommerce_fashionformen.dto.order.OrderStatsResponse;
 import com.example.ecommerce_fashionformen.dto.order.OrderStatusHistoryResponse;
 import com.example.ecommerce_fashionformen.repository.*;
+import com.example.ecommerce_fashionformen.dto.ghn.GhnCreateOrderResponse;
 import com.example.ecommerce_fashionformen.services.AdminOrderService;
+import com.example.ecommerce_fashionformen.services.GhnService;
 import com.example.ecommerce_fashionformen.services.NotificationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +44,11 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     private final UserRepository userRepository;
     private final RankRepository rankRepository;
     private final NotificationService notificationService;
+    private final GhnService ghnService;
+    private final ShipmentRepository shipmentRepository;
+    private final UserAddressRepository userAddressRepository;
     private final ModelMapper mapper;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.order.point-per-amount:1000}")
     private int pointPerAmount;
@@ -123,6 +130,11 @@ public class AdminOrderServiceImpl implements AdminOrderService {
 
         order.setOrderStatus(newStatus);
 
+        // Tạo đơn GHN khi chuyển sang DELIVERING
+        if (newStatus == OrderStatus.DELIVERING) {
+            handleDelivering(order);
+        }
+
         // Xử lý logic đặc biệt khi chuyển sang DELIVERED
         if (newStatus == OrderStatus.DELIVERED) {
             handleDelivered(order);
@@ -157,6 +169,73 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         }
 
         return mapper.map(order, OrderResponse.class);
+    }
+
+    /**
+     * Khi admin chuyển sang DELIVERING:
+     * - Lấy địa chỉ giao hàng từ userAddressId của đơn hàng
+     * - Gọi GHN API tạo đơn vận chuyển
+     * - Lưu thông tin vận đơn vào bảng shipments
+     * - Lỗi GHN không block việc cập nhật trạng thái (chỉ log warning)
+     */
+    private void handleDelivering(Order order) {
+        // Kiểm tra đã có vận đơn GHN cho đơn này chưa (tránh tạo duplicate)
+        if (shipmentRepository.findByOrderId(order.getId()).isPresent()) {
+            log.warn("[GHN] Đơn hàng #{} đã có vận đơn GHN, bỏ qua.", order.getId());
+            return;
+        }
+
+        UserAddress address = null;
+        if (order.getUserAddressId() != null) {
+            address = userAddressRepository.findById(order.getUserAddressId()).orElse(null);
+        }
+
+        if (address == null) {
+            log.warn("[GHN] Đơn hàng #{} không có địa chỉ giao hàng hợp lệ, bỏ qua tạo đơn GHN.",
+                    order.getId());
+            return;
+        }
+
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        if (items.isEmpty()) {
+            log.warn("[GHN] Đơn hàng #{} không có sản phẩm, bỏ qua tạo đơn GHN.", order.getId());
+            return;
+        }
+
+        try {
+            GhnCreateOrderResponse ghnResponse = ghnService.createShippingOrder(order, address, items);
+            GhnCreateOrderResponse.GhnCreateOrderData data = ghnResponse.getData();
+
+            // Tính tổng khối lượng
+            int totalQty = items.stream().mapToInt(OrderItem::getQuantity).sum();
+            int totalWeight = totalQty * 300; // 300g/sản phẩm (khớp GhnServiceImpl)
+
+            // Lưu vận đơn vào DB
+            Shipment shipment = new Shipment();
+            shipment.setOrderId(order.getId());
+            shipment.setGhnOrderCode(data.getOrderCode());
+            shipment.setExpectedDeliveryTime(data.getExpectedDeliveryTime());
+            shipment.setTotalWeight(totalWeight);
+            shipment.setCodAmount(Boolean.TRUE.equals(order.getIsPaid())
+                    ? java.math.BigDecimal.ZERO
+                    : order.getFinalAmount());
+            if (data.getTotalFee() != null) {
+                shipment.setTotalFee(java.math.BigDecimal.valueOf(data.getTotalFee()));
+            }
+            // Lưu raw JSON response để debug/audit
+            try {
+                shipment.setGhnRawResponse(objectMapper.writeValueAsString(ghnResponse));
+            } catch (Exception ignored) { /* không cần thiết, bỏ qua */ }
+
+            shipmentRepository.save(shipment);
+
+            log.info("[GHN] Tạo vận đơn thành công cho đơn #{} → ghnOrderCode={}, expectedDelivery={}",
+                    order.getId(), data.getOrderCode(), data.getExpectedDeliveryTime());
+
+        } catch (Exception e) {
+            // Không throw exception — GHN lỗi không nên block việc đổi trạng thái
+            log.error("[GHN] Tạo vận đơn thất bại cho đơn #{}: {}", order.getId(), e.getMessage(), e);
+        }
     }
 
     /**

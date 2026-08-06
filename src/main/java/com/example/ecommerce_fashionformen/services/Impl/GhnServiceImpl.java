@@ -115,6 +115,7 @@ public class GhnServiceImpl implements GhnService {
                         .name("Product Variant #" + item.getProductVariantId())
                         .quantity(item.getQuantity())
                         .price(item.getPrice().longValue())
+                        .weight(ITEM_WEIGHT_GRAMS) // Set weight per item
                         .build())
                 .collect(Collectors.toList());
 

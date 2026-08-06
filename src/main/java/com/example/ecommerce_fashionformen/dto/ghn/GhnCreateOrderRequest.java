@@ -102,5 +102,8 @@ public class GhnCreateOrderRequest {
 
         @JsonProperty("price")
         private Long price;
+
+        @JsonProperty("weight")
+        private Integer weight;
     }
 }

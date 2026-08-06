@@ -14,10 +14,11 @@ import com.example.ecommerce_fashionformen.repository.CartItemRepository;
 import com.example.ecommerce_fashionformen.repository.CartRepository;
 import com.example.ecommerce_fashionformen.repository.ProductVariantsRepository;
 import com.example.ecommerce_fashionformen.repository.UserRepository;
+import com.example.ecommerce_fashionformen.repository.UserAddressRepository;
 import com.example.ecommerce_fashionformen.services.CartService;
 import com.example.ecommerce_fashionformen.services.DiscountCalculationService;
+import com.example.ecommerce_fashionformen.services.GhnService;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,10 +36,11 @@ public class CartServiceImpl implements CartService {
     private final UserRepository userRepository;
     private final ProductVariantsRepository productVariantRepository;
     private final DiscountCalculationService discountCalculationService;
-    private final ModelMapper mapper;
+    private final UserAddressRepository userAddressRepository;
+    private final GhnService ghnService;
 
     @Value("${app.order.shipping-fee:0}")
-    private BigDecimal shippingFee;
+    private BigDecimal defaultShippingFee;
 
     private Cart getOrCreateCart(Long userId) {
         User user = userRepository.findById(userId)
@@ -53,7 +55,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CartResponse getCartDetails(Long userId) {
         Cart cart = getOrCreateCart(userId);
         User user = cart.getUser();
@@ -208,10 +210,40 @@ public class CartServiceImpl implements CartService {
             itemResponses.add(itemResp);
         }
 
+        int totalQuantity = items.stream().mapToInt(CartItem::getQuantity).sum();
+        BigDecimal calculatedShippingFee = BigDecimal.ZERO;
+        if (totalQuantity > 0) {
+            calculatedShippingFee = defaultShippingFee;
+            // Chỉ lấy địa chỉ chưa bị soft-delete
+            List<com.example.ecommerce_fashionformen.domain.entity.UserAddress> addresses =
+                    userAddressRepository.findByUserAndIsDeletedFalse(user);
+            com.example.ecommerce_fashionformen.domain.entity.UserAddress addressToUse = null;
+            for (com.example.ecommerce_fashionformen.domain.entity.UserAddress addr : addresses) {
+                if (Boolean.TRUE.equals(addr.getIsDefault())) {
+                    addressToUse = addr;
+                    break;
+                }
+            }
+            if (addressToUse == null && !addresses.isEmpty()) {
+                addressToUse = addresses.get(0);
+            }
+
+            if (addressToUse != null) {
+                try {
+                    calculatedShippingFee = ghnService.calculateShippingFee(
+                            totalQuantity,
+                            addressToUse.getDistrictId().intValue(),
+                            addressToUse.getWardId());
+                } catch (Exception e) {
+                    // Ignore, fallback to defaultShippingFee
+                }
+            }
+        }
+
         response.setCartItems(itemResponses);
         response.setSubtotal(subtotal);
         response.setProductDiscount(productDiscount);
-        response.setShippingFee(shippingFee);
+        response.setShippingFee(calculatedShippingFee);
 
         // Dùng chung DiscountCalculationService thay vì tính lặp lại logic coupon
         BigDecimal subtotalAfterProductDiscount = subtotal.subtract(productDiscount);
@@ -227,7 +259,7 @@ public class CartServiceImpl implements CartService {
         BigDecimal finalAmount = subtotalAfterProductDiscount
                 .subtract(discountResult.getCouponDiscount())
                 .subtract(discountResult.getRankDiscount())
-                .add(shippingFee);
+                .add(calculatedShippingFee);
 
         // Đảm bảo finalAmount không âm
         if (finalAmount.compareTo(BigDecimal.ZERO) < 0) {

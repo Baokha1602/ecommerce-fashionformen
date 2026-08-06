@@ -21,6 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -86,4 +88,13 @@ public class OrderController {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
         return user.getId();
     }
+
+    @GetMapping("/shipping-fee")
+    public ApiResponse<BigDecimal> getShippingFee(
+            @RequestParam Long addressId,
+            @RequestParam Integer totalQuantity) {
+        BigDecimal fee = orderService.calculateShippingFee(addressId, totalQuantity);
+        return ApiResponse.success("Tính phí ship thành công", fee);
+    }
+
 }

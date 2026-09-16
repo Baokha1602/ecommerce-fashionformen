@@ -4,7 +4,8 @@ spring:
     url: ${YOEDU_DB_URL:jdbc:mysql://localhost:3306/fashionformen?createDatabaseIfNotExist=true}
     username: ${YOEDU_DB_USERNAME:root}
     password: ${YOEDU_DB_PASSWORD:}
+
   jpa:
     properties:
       hibernate:
-        dialect:
+        dialect: org.hibernate.dialect.MariaDBDialect
